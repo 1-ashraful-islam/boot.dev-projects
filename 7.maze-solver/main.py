@@ -1,31 +1,34 @@
-from tkinter import Tk, BOTH, Canvas
-
-class Point():
-  def __init__(self, x, y):
-    self.x = x
-    self.y = y
-
-class Line():
-  def __init__(self, start: Point, end: Point):
-    self.start = start
-    self.end = end
-  
-  def draw(self, canvas: Canvas, fill_color):
-    canvas.create_line(self.start.x, self.start.y, self.end.x, self.end.y, fill=fill_color, width = 2)
-    canvas.pack()
-
+from tkinter import Tk, BOTH, Canvas, Button
+from gprimitives import Point, Line, Cell
+from maze import Maze
+from time import sleep
 
 
 class Window():
-  def __init__(self, width, height):
+  def __init__(self, width, height, background="#ccc"):
     self.width = width
     self.height = height
+    self.background = background
     self.__root = Tk()
     self.__root.title("Maze Solver")
-    self.__canvas = Canvas(self.__root, width=self.width, height=self.height)
+    self.__canvas = Canvas(self.__root, width=self.width, height=self.height, background=self.background)
     self.__canvas.pack()
     self.__is_running = False
     self.__root.protocol("WM_DELETE_WINDOW", self.close)
+    self._create_buttons()
+    
+
+    # Parameters for maze generation
+    self.num_cols = 12
+    self.num_rows = 10
+    self.padding = 50
+    self.seed = None
+    self.maze_width = (width - 2 * self.padding) / self.num_cols
+    self.maze_height = (height - 2 * self.padding) / self.num_rows
+
+    self.maze_processing = False
+    # Initial Maze creation
+    self.create_new_maze()
 
   def redraw(self):
     self.__root.update_idletasks()
@@ -33,56 +36,62 @@ class Window():
 
   def wait_for_close(self):
     self.__is_running = True
-    while self.__is_running:
-      self.redraw()
+    self.__root.mainloop()
+    # while self.__is_running:
+    #   print("waiting")
+    #   self.redraw()
   
   def close(self):
     self.__is_running = False
+    if hasattr(self, 'maze'):  # Check if maze exists before trying to stop it
+        self.maze_processing = True
+        if hasattr(self.maze, 'stop'):  # Check if the maze has a stop method
+            self.maze.stop()
+    self.__root.quit()  # Gracefully terminate the mainloop
+    self.__root.destroy()  # This will close the Tkinter window immediately
+    
+
+  
+  def is_running(self):
+    return self.__is_running
 
   def draw_line(self, line: Line, fill_color = "black"):
     line.draw(self.__canvas, fill_color)
 
-class Cell():
-  def __init__(self, top_left: Point, bottom_right: Point, window: Window):
-    self.__x1 = top_left.x
-    self.__y1 = top_left.y
-    self.__x2 = bottom_right.x
-    self.__y2 = bottom_right.y
-    self.has_left_wall = True
-    self.has_right_wall = True
-    self.has_top_wall = True
-    self.has_bottom_wall = True
-    self.__win = window
-  
-  def draw(self):
-    self.__win.draw_line
-    if self.has_left_wall:
-      self.__win.draw_line(Line(Point(self.__x1, self.__y1), Point(self.__x1, self.__y2)))
-      
-    if self.has_right_wall:
-      self.__win.draw_line(Line(Point(self.__x2, self.__y1), Point(self.__x2, self.__y2)))
-      
-    if self.has_top_wall:
-      self.__win.draw_line(Line(Point(self.__x1, self.__y1), Point(self.__x2, self.__y1)))
-      
-    if self.has_bottom_wall:
-      self.__win.draw_line(Line(Point(self.__x1, self.__y2), Point(self.__x2, self.__y2)))
-  
-  def draw_move(self, to_cell, undo = False):
-    Point1 = Point((self.__x1 + self.__x2) / 2, (self.__y1 + self.__y2) / 2)
-    Point2 = Point((to_cell.__x1 + to_cell.__x2) / 2, (to_cell.__y1 + to_cell.__y2) / 2)
-    if undo:
-      self.__win.draw_line(Line(Point1, Point2), "gray")
-    else:
-      self.__win.draw_line(Line(Point1, Point2), "red")
+  def _create_buttons(self):
+    self.__buttons = []
+    self.__buttons.append(Button(self.__root, text="Exit", command=self.close))
+    self.__buttons[-1].pack(side="right")
+    self.__buttons.append(Button(self.__root, text="Reset", command=self.create_new_maze))
+    self.__buttons[-1].pack(side="right")
+    
+  def create_new_maze(self):
+    # Clear the canvas
+    if self.maze_processing:
+      self.maze_processing = False
+      self.maze.stop()
+    self.__canvas.delete("all")
+
+    self.maze_processing = True
+    self.maze = Maze(self.padding, self.padding, self.num_rows, self.num_cols, 
+                         self.maze_width, self.maze_height, self, seed=self.seed)
+    self.maze.draw()
+    self.maze.solve()
+    self.maze_processing = False
+
+  def get_canvas(self):
+    return self.__canvas
 
 def main():
-  window = Window(800, 600)
-  cell = Cell(Point(10, 10), Point(100, 100), window)
-  cell.draw()
-  cell2 = Cell(Point(100, 10), Point(200, 100), window)
-  cell2.draw()
-  cell.draw_move(cell2)
+  width = 800
+  height = 600
+  window = Window(width, height)
+  # num_cols = 12
+  # num_rows = 10
+  # padding = 50
+  # seed = None
+  # maze = Maze(padding, padding, num_rows, num_cols, (width - 2*padding) /num_cols, (height - 2*padding)/num_rows, window, seed= seed)
+  # maze.solve()
   window.wait_for_close()
 
 if __name__ == "__main__":
