@@ -1,2 +1,6 @@
 # data directories
 3.bookbot/books/*
+
+# virtualenv
+.venv
+__pycache__
