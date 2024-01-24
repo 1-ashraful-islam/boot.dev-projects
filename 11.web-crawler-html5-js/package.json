@@ -1,0 +1,19 @@
+{
+  "name": "web-crawler",
+  "version": "1.0.0",
+  "description": "CLI application to crawls a website and reports on internal linking profile",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "web",
+    "crawler",
+    "internal",
+    "linking",
+    "profile"
+  ],
+  "author": "Ashraful Islam",
+  "license": "ISC"
+}
