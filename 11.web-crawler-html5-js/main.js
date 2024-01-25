@@ -13,7 +13,7 @@ function main() {
 
   try {
 
-    //TODO: check robots.txt before crawling
+
     const BASE_URL = new URL(argv[2]);
     console.log(`Crawling ${BASE_URL}`);
     let pages = new Map();

@@ -14,8 +14,12 @@ function getURLsFromHTML(htmlBody, baseURL) {
   const anchors = dom.window.document.querySelectorAll('a');
 
   anchors.forEach((anchor) => {
-    const url = new URL(anchor.href, baseURL);
-    urls.push(url);
+    try {
+      const url = new URL(anchor.href, baseURL);
+      urls.push(url);
+    } catch (e) {
+      console.error(`Invalid URL: ${anchor.href}`);
+    }
   });
 
   return urls;
@@ -47,7 +51,6 @@ async function fetchPage(currentURL) {
 async function crawlPage(baseURL, currentURL, pages) {
   //check if the baseURL has same origin as currentURL
   if (baseURL.origin !== currentURL.origin) {
-    
     return pages;
   }
   //check if the currentURL has already been crawled
@@ -63,13 +66,13 @@ async function crawlPage(baseURL, currentURL, pages) {
     //fetch the page
     let htmlBody = await fetchPage(currentURL);
     //get all urls from the page
-    let urls = getURLsFromHTML(htmlBody, baseURL);
-    //crawl all urls from the page
-    urls.forEach((url) => {
-      crawlPage(baseURL, url, pages);
-    });
+    let urls = getURLsFromHTML(htmlBody, currentURL);
+    //crawl each url from the page
+    for (let url of urls) {
+      await crawlPage(baseURL, url, pages);
+    }
   } catch (error) {
-    console.log(error);
+    console.error(`Error crawling ${currentURL}: ${error}`);
   }
 
   return pages;
