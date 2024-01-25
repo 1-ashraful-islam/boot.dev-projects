@@ -1,4 +1,8 @@
-const {normalizeURL, getURLsFromHTML} = require('./crawl');
+const {normalizeURL, getURLsFromHTML, fetchPage} = require('./crawl');
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
 test('normalizes urls', () => {
   const url_list = [
@@ -34,3 +38,74 @@ test('get all urls from html', () => {
 
 
 });
+
+test('fetchPage fetch successful html',async () => {
+  
+  const responseBody = '<html><body><h1>Test</h1></body></html>';
+  const responseOptions = {
+    status: 200,
+    ok: true,
+    headers: {
+      'Content-Type': 'text/html'
+    },
+  };
+
+  global.fetch = jest.fn();
+
+  fetch.mockReturnValue(
+    Promise.resolve(
+      new Response(responseBody, responseOptions)
+    )
+  );
+
+  const output = await fetchPage('https://blog.boot.dev');
+  expect(output).toBe('<html><body><h1>Test</h1></body></html>');
+  expect(fetch).toHaveBeenCalledWith('https://blog.boot.dev');
+
+});
+
+
+test('fetchPage throws 400+ error', async () => {
+  const responseBody = 'Bad Request';
+  const responseOptions = {
+    status: 400,
+    ok: false,
+    headers: {
+      'Content-Type': 'text/html'
+    },
+  };
+
+  global.fetch = jest.fn();
+
+  fetch.mockReturnValue(
+    Promise.resolve(
+      new Response(responseBody, responseOptions)
+    )
+  );
+
+  await expect(() => fetchPage('https://blog.boot.dev')).rejects.toThrow('Failed to fetch https://blog.boot.dev. Status: 400');
+});
+
+test('fetchPage throws content not text/html', async () => {
+  const responseBody = 'Bad Request';
+  const responseOptions = {
+    status: 200,
+    ok: true,
+    headers: {
+      'Content-Type': 'text/plain'
+    },
+  };
+
+  global.fetch = jest.fn();
+
+  fetch.mockReturnValue(
+    Promise.resolve(
+      new Response(responseBody, responseOptions)
+    )
+  );
+
+  await expect(() => fetchPage('https://blog.boot.dev')).rejects.toThrow('Failed to fetch https://blog.boot.dev. Content-Type is not text/html');
+});
+
+
+//TODO: test fetchPage with invalid URL string

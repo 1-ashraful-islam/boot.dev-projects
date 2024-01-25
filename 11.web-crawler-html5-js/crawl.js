@@ -21,8 +21,72 @@ function getURLsFromHTML(htmlBody, baseURL) {
   return urls;
 }
 
+async function fetchPage(currentURL) {
+
+  return fetch(currentURL)
+    .then((response) => {
+      if (!response.ok || response.status !== 200) {
+        throw new Error(`Failed to fetch ${currentURL}. Status: ${response.status}`);
+      }
+
+      const contentType = response.headers.get('Content-Type');
+      
+      if (!contentType || !contentType.includes('text/html')) {
+        throw new Error(`Failed to fetch ${currentURL}. Content-Type is not text/html`);
+      }
+
+      return response;
+    })
+    .then((response) => {
+      // console.log(response.text())
+      return response.text();
+    });
+
+}
+
+async function crawlPage(baseURL, currentURL, pages) {
+  //check if the baseURL has same origin as currentURL
+  if (baseURL.origin !== currentURL.origin) {
+    
+    return pages;
+  }
+  //check if the currentURL has already been crawled
+  const normalizedURL = normalizeURL(currentURL);
+  if (pages.has(normalizedURL)) {
+    pages.set(normalizedURL, pages.get(normalizedURL) + 1);
+    return pages;
+  } else {
+    pages.set(normalizedURL, baseURL === currentURL ? 0 :1);
+  }
+
+  try {
+    //fetch the page
+    let htmlBody = await fetchPage(currentURL);
+    //get all urls from the page
+    let urls = getURLsFromHTML(htmlBody, baseURL);
+    //crawl all urls from the page
+    urls.forEach((url) => {
+      crawlPage(baseURL, url, pages);
+    });
+  } catch (error) {
+    console.log(error);
+  }
+
+  return pages;
+}
+
+function printReport(pages) {
+  const sortedPages = new Map([...pages.entries()].sort((a, b) => b[1] - a[1]));
+  console.log(sortedPages);
+}
+
+
+
 module.exports = {
   normalizeURL,
-  getURLsFromHTML
+  getURLsFromHTML,
+  fetchPage,
+  crawlPage,
+  printReport
 };
 
