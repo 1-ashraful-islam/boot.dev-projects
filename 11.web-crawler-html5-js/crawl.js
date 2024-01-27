@@ -8,14 +8,14 @@ function normalizeURL(url) {
   return normal_url;
 }
 
-function getURLsFromHTML(htmlBody, baseURL) {
+function getURLsFromHTML(htmlBody, currentURL) {
   const urls = [];
   const dom = new JSDOM(htmlBody);
   const anchors = dom.window.document.querySelectorAll('a');
 
   anchors.forEach((anchor) => {
     try {
-      const url = new URL(anchor.href, baseURL);
+      const url= new URL(anchor.getAttribute('href'), currentURL);
       urls.push(url);
     } catch (e) {
       console.error(`Invalid URL: ${anchor.href}`);
@@ -25,9 +25,10 @@ function getURLsFromHTML(htmlBody, baseURL) {
   return urls;
 }
 
+
 async function fetchPage(currentURL) {
 
-  return fetch(currentURL)
+  return fetch(currentURL.href, {redirect: 'follow'})
     .then((response) => {
       if (!response.ok || response.status !== 200) {
         throw new Error(`Failed to fetch ${currentURL}. Status: ${response.status}`);
@@ -42,16 +43,24 @@ async function fetchPage(currentURL) {
       return response;
     })
     .then((response) => {
+      // if (response.redirected) {
+      //   console.log(`Redirected to ${response.url} from ${currentURL}`);
+      // }
       // console.log(response.text())
       return response.text();
     });
 
 }
 
-async function crawlPage(baseURL, currentURL, pages) {
+async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAgent) {
   //check if the baseURL has same origin as currentURL
   if (baseURL.origin !== currentURL.origin) {
-    return pages;
+    return;
+  }
+  // Check if the URL is allowed to be crawled
+  if (!robots.isAllowed(currentURL.href, userAgent)) {
+    console.error(`Crawling disallowed for ${currentURL}`);
+    return;
   }
   //check if the currentURL has already been crawled
   const normalizedURL = normalizeURL(currentURL);
@@ -62,25 +71,27 @@ async function crawlPage(baseURL, currentURL, pages) {
     pages.set(normalizedURL, baseURL === currentURL ? 0 :1);
   }
 
+  console.log(`Crawling ${currentURL}`);
+
   try {
     //fetch the page
     let htmlBody = await fetchPage(currentURL);
+
+
     //get all urls from the page
     let urls = getURLsFromHTML(htmlBody, currentURL);
-    //crawl each url from the page
+    //crawl each url from the page with delay
     for (let url of urls) {
-      await crawlPage(baseURL, url, pages);
+      await new Promise(resolve => setTimeout(resolve, crawlDelay));
+      await crawlPage(url, currentURL, pages, crawlDelay, robots, userAgent);
     }
   } catch (error) {
     console.error(`Error crawling ${currentURL}: ${error}`);
+    //delete the currentURL from pages
+    // pages.delete(normalizedURL);
   }
 
   return pages;
-}
-
-function printReport(pages) {
-  const sortedPages = new Map([...pages.entries()].sort((a, b) => b[1] - a[1]));
-  console.log(sortedPages);
 }
 
 
@@ -90,6 +101,5 @@ module.exports = {
   getURLsFromHTML,
   fetchPage,
   crawlPage,
-  printReport
 };
 

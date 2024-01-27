@@ -1,7 +1,11 @@
 const {argv} = require('node:process');
-const { crawlPage, printReport} = require('./crawl');
+const robotsParser = require('robots-parser');
 
-function main() {
+const {crawlPage} = require('./crawl');
+const {printReport, fetchRobotsTxt} = require('./util');
+
+
+async function main() {
   if (argv.length < 3 || argv.length > 3) {
     printHelp();
     return;
@@ -13,17 +17,25 @@ function main() {
 
   try {
 
-
     const BASE_URL = new URL(argv[2]);
+    const robots = await fetchRobotsTxt(BASE_URL);
+    const userAgent = 'Mozilla/5.0 (compatible; Crawlbot/1.0; +http://1-ashraful-islam.github.io/project/web-crawler)';
+
+    // Crawl delay implementation
+    const crawlDelay = robots?.getCrawlDelay(userAgent) * 1000 || 10;
+  
     console.log(`Crawling ${BASE_URL}`);
     let pages = new Map();
-    crawlPage(BASE_URL, BASE_URL, pages)
+    crawlPage(BASE_URL, BASE_URL, pages, crawlDelay, robots, userAgent)
       .then((pages) => {
-        printReport(pages);
+        if (pages) {
+          printReport(pages);
+        }
+        
       });
 
   } catch (error) {
-    console.log("Invalid URL");
+    console.error(`Error crawling ${argv[2]}. Error: ${error}`);
     printHelp();
     return;
   }
