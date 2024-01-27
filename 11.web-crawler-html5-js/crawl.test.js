@@ -1,4 +1,4 @@
-const {normalizeURL, getURLsFromHTML, fetchPage} = require('./crawl');
+const {normalizeURL, getURLsFromHTML, fetchPage, crawlPage} = require('./crawl');
 
 afterEach(() => {
   jest.restoreAllMocks();
