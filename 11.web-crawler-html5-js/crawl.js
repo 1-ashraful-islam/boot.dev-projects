@@ -52,13 +52,13 @@ async function fetchPage(currentURL) {
 
 }
 
-async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAgent) {
+async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAgent, depth) {
   //check if the baseURL has same origin as currentURL
-  if (baseURL.origin !== currentURL.origin) {
+  if (baseURL.origin !== currentURL.origin || depth < 0) {
     return;
   }
   // Check if the URL is allowed to be crawled
-  if (!robots.isAllowed(currentURL.href, userAgent)) {
+  if (robots && !robots.isAllowed(currentURL.href, userAgent)) {
     console.error(`Crawling disallowed for ${currentURL}`);
     return;
   }
@@ -83,12 +83,14 @@ async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAge
     //crawl each url from the page with delay
     for (let url of urls) {
       await new Promise(resolve => setTimeout(resolve, crawlDelay));
-      await crawlPage(url, currentURL, pages, crawlDelay, robots, userAgent);
+      await crawlPage(url, currentURL, pages, crawlDelay, robots, userAgent, depth - 1);
     }
   } catch (error) {
     console.error(`Error crawling ${currentURL}: ${error}`);
-    //delete the currentURL from pages
-    // pages.delete(normalizedURL);
+    //delete the currentURL from pages if the error is 404
+    // if (error.message.includes('404')) {
+    //   pages.delete(normalizedURL);
+    // }
   }
 
   return pages;

@@ -18,7 +18,7 @@ function printReport(pages) {
 
 async function fetchRobotsTxt(url) {
   try {
-    const robotsUrl = new URL('/robots.txt', url).href;
+    const robotsUrl = new URL('/robots.txt', url.origin).href;
     const response = await fetch(robotsUrl);
     const robotsTxt = await response.text();
     return robotsParser(robotsUrl, robotsTxt);
