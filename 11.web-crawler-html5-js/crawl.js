@@ -52,7 +52,7 @@ async function fetchPage(currentURL) {
 
 }
 
-async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAgent, depth) {
+async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAgent, depth, graph) {
   //check if the baseURL has same origin as currentURL
   if (baseURL.origin !== currentURL.origin || depth < 0) {
     return;
@@ -69,6 +69,10 @@ async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAge
     return pages;
   } else {
     pages.set(normalizedURL, baseURL === currentURL ? 0 :1);
+    graph.addNode(currentURL.pathname);
+    if (baseURL.pathname !== currentURL.pathname) {
+      graph.addEdge(baseURL.pathname, currentURL.pathname);
+    }
   }
 
   console.log(`Crawling ${currentURL}`);
@@ -83,7 +87,7 @@ async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAge
     //crawl each url from the page with delay
     for (let url of urls) {
       await new Promise(resolve => setTimeout(resolve, crawlDelay));
-      await crawlPage(url, currentURL, pages, crawlDelay, robots, userAgent, depth - 1);
+      await crawlPage(url, currentURL, pages, crawlDelay, robots, userAgent, depth - 1, graph);
     }
   } catch (error) {
     console.error(`Error crawling ${currentURL}: ${error}`);
@@ -96,6 +100,56 @@ async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAge
   return pages;
 }
 
+async function breadthFirstCrawl(baseURL, pages, crawlDelay, robots, userAgent, maxDepth, graph) {
+  let queue = [{url: baseURL, refURL: baseURL, depth: 0}];
+
+  let edges = new Map();
+
+
+  while (queue.length > 0) {
+    let {url, refURL, depth} = queue.shift(); // Get the first URL from the queue
+    if (depth > maxDepth) continue;
+
+    const normalizedURL = normalizeURL(url);
+    if (pages.has(normalizedURL)) {
+      pages.set(normalizedURL, pages.get(normalizedURL) + 1);
+      continue;
+    }
+    pages.set(normalizedURL, 1);
+
+    if (robots && !robots.isAllowed(url.href, userAgent)) {
+      console.error(`Crawling disallowed for ${url}`);
+      continue;
+    }
+    
+    graph.addNode(url.pathname);
+    if ((!edges.has(refURL.pathname + "->" + url.pathname) || !edges.has(url.pathname + "->" +refURL.pathname)) && refURL.pathname !== url.pathname) {
+      graph.addEdge(refURL.pathname, url.pathname);
+      edges.set(refURL.pathname + "->" + url.pathname, true);
+    }
+
+    console.log(`Crawling ${url}`);
+    try {
+      let htmlBody = await fetchPage(url);
+      let urls = getURLsFromHTML(htmlBody, url);
+
+      urls.forEach(newUrl => {
+        const normalizedNewUrl = normalizeURL(newUrl);
+        if (newUrl.origin === baseURL.origin) {
+          queue.push({url: newUrl, refURL: url, depth: depth + 1}); // Add new URLs to the queue
+          
+        }
+      });
+    } catch (error) {
+      console.error(`Error crawling ${url}: ${error}`);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, crawlDelay)); // Crawl delay
+  }
+
+  return {pages, graph};
+}
+
 
 
 module.exports = {
@@ -103,5 +157,6 @@ module.exports = {
   getURLsFromHTML,
   fetchPage,
   crawlPage,
+  breadthFirstCrawl,
 };
 

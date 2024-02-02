@@ -1,7 +1,7 @@
 const robotsParser = require('robots-parser');
 const fs = require('fs');
 
-function printReport(pages) {
+function printReport(pages, outputFile) {
   const sortedPages = new Map([...pages.entries()].sort((a, b) => b[1] - a[1]));
 
   // Generate CSV string
@@ -11,7 +11,7 @@ function printReport(pages) {
   });
 
   // Save CSV to file
-  fs.writeFileSync('report.csv', csv);
+  fs.writeFileSync(outputFile, csv);
 
   console.log('Report saved as report.csv');
 }

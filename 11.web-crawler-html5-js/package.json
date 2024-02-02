@@ -22,6 +22,7 @@
   "dependencies": {
     "graphviz": "^0.0.9",
     "jsdom": "^24.0.0",
-    "robots-parser": "^3.0.1"
+    "robots-parser": "^3.0.1",
+    "yargs": "^17.7.2"
   }
 }
