@@ -1,9 +1,17 @@
 # boot.dev-projects
 
-guided and non-guided projects from backend developer courses
+This repository contains my implementation of guided and non-guided projects from backend developer courses
 
 ## Projects
 
-- [x] [**`Maze Solver (Python)`**](7.maze-solver/)
-- [x] [**`Maze Generator (JavaScript)`**](7.maze-solver-html5-js/)
+- [x] [**`BookBot(Python)`**](3.bookbot/)
+- [x] **`Maze Solver`** in [**`Python`**](7.maze-solver/) and [**`JavaScript`**](7.maze-solver-html5-js/)
 - [x] [**`Web Crawler (JavaScript)`**](11.web-crawler-html5-js/)
+
+## Usage
+
+See the readme file in each project folder for usage instructions for the respective project.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
