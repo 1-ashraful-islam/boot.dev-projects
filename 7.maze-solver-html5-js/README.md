@@ -1,6 +1,6 @@
 # Introduction
 
-This maze solver is built using Python and Tkinter. It draws a randomized maze and then solves it based on the implemented algorithms.
+This maze solver is built using Python and Tkinter. It draws a randomized maze and then solves it based on the implemented algorithms. Try a live demo [here.](https://1-ashraful-islam.github.io/projects/maze-generator-and-solver/)
 ![mage-solver-image](https://i.imgur.com/RehzDga.png)
 
 ## Class Diagram
