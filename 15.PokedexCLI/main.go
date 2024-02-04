@@ -2,14 +2,16 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/1-ashraful-islam/boot.dev-projects/15.PokedexCLI/internal/pokeapi"
 	"github.com/1-ashraful-islam/boot.dev-projects/15.PokedexCLI/internal/pokecache"
 )
 
-type appContext struct {
+type appConfig struct {
 	Next     *string
 	Previous *string
 	Cache    *pokecache.Cache
@@ -18,7 +20,7 @@ type appContext struct {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(cf *appContext) error
+	callback    func(cf *appConfig) error
 }
 
 func getCliCommands() map[string]cliCommand {
@@ -46,7 +48,7 @@ func getCliCommands() map[string]cliCommand {
 	}
 }
 
-func commandHelp(_ *appContext) error {
+func commandHelp(_ *appConfig) error {
 	help_message := "\nWelcome to the Pokedex!\nUsages:\n"
 	commands := getCliCommands()
 	for _, command := range commands {
@@ -56,12 +58,12 @@ func commandHelp(_ *appContext) error {
 	return nil
 }
 
-func commandExit(_ *appContext) error {
+func commandExit(_ *appConfig) error {
 	fmt.Println("Goodbye!")
 	return nil
 }
 
-func commandMap(cf *appContext) error {
+func commandMap(cf *appConfig) error {
 	if cf.Next == nil {
 		return fmt.Errorf("no more location areas")
 	}
@@ -79,7 +81,7 @@ func commandMap(cf *appContext) error {
 	return nil
 }
 
-func commandMapb(cf *appContext) error {
+func commandMapb(cf *appConfig) error {
 	if cf.Previous == nil {
 		return fmt.Errorf("no previous location areas")
 	}
@@ -99,12 +101,15 @@ func commandMapb(cf *appContext) error {
 }
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	locationURL := "https://pokeapi.co/api/v2/location-area/?offset=0&limit=20"
 	commands := getCliCommands()
-	context := &appContext{
+	config := &appConfig{
 		Next:     &locationURL,
 		Previous: nil,
-		Cache:    pokecache.NewCache(360),
+		Cache:    pokecache.NewCache(ctx, 360*time.Second),
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -113,7 +118,7 @@ func main() {
 		line := scanner.Text()
 		command, ok := commands[line]
 		if ok {
-			err := command.callback(context)
+			err := command.callback(config)
 			if err != nil {
 				fmt.Println("Error:", err)
 			}
@@ -128,4 +133,8 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "Reading standard input:", err)
 	}
+
+	cancel()
+	//add a small delay to allow the go routines to exit
+	time.Sleep(10 * time.Millisecond)
 }

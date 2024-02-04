@@ -1,6 +1,7 @@
 package pokecache
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -15,12 +16,12 @@ type cacheEntry struct {
 	val       []byte
 }
 
-func NewCache(interval time.Duration) *Cache {
+func NewCache(ctx context.Context, interval time.Duration) *Cache {
 	cache := &Cache{
 		cache: make(map[string]cacheEntry),
 		mutex: &sync.RWMutex{},
 	}
-	go cache.reapLoop(interval)
+	go cache.reapLoop(ctx, interval)
 	return cache
 }
 
@@ -47,16 +48,22 @@ func (c *Cache) reap(interval time.Duration) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	for key, entry := range c.cache {
-		if time.Since(entry.createdAt) > interval*time.Second {
+		if time.Since(entry.createdAt) > interval {
 			delete(c.cache, key)
 		}
 	}
 }
 
-func (c *Cache) reapLoop(interval time.Duration) {
+func (c *Cache) reapLoop(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 
-	for range ticker.C {
-		c.reap(interval)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			c.reap(interval)
+		}
 	}
 }
