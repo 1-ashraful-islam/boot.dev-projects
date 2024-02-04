@@ -4,13 +4,21 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	// "strings"
+
+	"github.com/1-ashraful-islam/boot.dev-projects/15.PokedexCLI/internal/pokeapi"
+	"github.com/1-ashraful-islam/boot.dev-projects/15.PokedexCLI/internal/pokecache"
 )
+
+type appContext struct {
+	Next     *string
+	Previous *string
+	Cache    *pokecache.Cache
+}
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(cf *appContext) error
 }
 
 func getCliCommands() map[string]cliCommand {
@@ -38,7 +46,7 @@ func getCliCommands() map[string]cliCommand {
 	}
 }
 
-func commandHelp() error {
+func commandHelp(_ *appContext) error {
 	help_message := "\nWelcome to the Pokedex!\nUsages:\n"
 	commands := getCliCommands()
 	for _, command := range commands {
@@ -48,21 +56,56 @@ func commandHelp() error {
 	return nil
 }
 
-func commandExit() error {
+func commandExit(_ *appContext) error {
 	fmt.Println("Goodbye!")
 	return nil
 }
 
-func commandMap() error {
-	return fmt.Errorf("not implemented")
+func commandMap(cf *appContext) error {
+	if cf.Next == nil {
+		return fmt.Errorf("no more location areas")
+	}
+	locations, err := pokeapi.GetLocationArea(*cf.Next, cf.Cache)
+	if err != nil {
+		return err
+	}
+
+	cf.Next = locations.Next
+	cf.Previous = locations.Previous
+
+	for _, location := range locations.Results {
+		fmt.Println(location.Name)
+	}
+	return nil
 }
 
-func commandMapb() error {
-	return fmt.Errorf("not implemented")
+func commandMapb(cf *appContext) error {
+	if cf.Previous == nil {
+		return fmt.Errorf("no previous location areas")
+	}
+	locations, err := pokeapi.GetLocationArea(*cf.Previous, cf.Cache)
+	if err != nil {
+		return err
+	}
+
+	cf.Next = locations.Next
+	cf.Previous = locations.Previous
+
+	for _, location := range locations.Results {
+		fmt.Println(location.Name)
+	}
+
+	return nil
 }
 
 func main() {
+	locationURL := "https://pokeapi.co/api/v2/location-area/?offset=0&limit=20"
 	commands := getCliCommands()
+	context := &appContext{
+		Next:     &locationURL,
+		Previous: nil,
+		Cache:    pokecache.NewCache(360),
+	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("Pokedex > ")
@@ -70,7 +113,7 @@ func main() {
 		line := scanner.Text()
 		command, ok := commands[line]
 		if ok {
-			err := command.callback()
+			err := command.callback(context)
 			if err != nil {
 				fmt.Println("Error:", err)
 			}
@@ -78,7 +121,7 @@ func main() {
 				break
 			}
 		} else {
-			commands["help"].callback()
+			commands["help"].callback(nil)
 		}
 		fmt.Print("Pokedex > ")
 	}
