@@ -64,6 +64,11 @@ func getCliCommands() map[string]cliCommand {
 			description: "Inspect a Pokémon",
 			callback:    commandInspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Displays all the Pokémon caught",
+			callback:    commandPokedex,
+		},
 	}
 }
 
@@ -203,7 +208,26 @@ func commandInspect(cf *appConfig, args []string) error {
 	return nil
 }
 
+func commandPokedex(cf *appConfig, _ []string) error {
+	if len(cf.Pokedex) == 0 {
+		fail_phrases := []string{
+			"Pokedéx is empty! Go catch some Pokémon!",
+			"No Pokémon caught yet!",
+			"Your Pokédex is empty!",
+			"Your Pokédex is empty! Go catch 'em all!",
+		}
+		fmt.Println(fail_phrases[rand.Intn(len(fail_phrases))])
+		return nil
+	}
+	fmt.Println("Your Pokédex:")
+	for name := range cf.Pokedex {
+		fmt.Println(" -", name)
+	}
+	return nil
+}
+
 func main() {
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
