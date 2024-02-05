@@ -22,7 +22,7 @@ type appConfig struct {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(cf *appConfig) error
+	callback    func(cf *appConfig, args []string) error
 }
 
 func getCliCommands() map[string]cliCommand {
@@ -52,10 +52,15 @@ func getCliCommands() map[string]cliCommand {
 			description: "Explore a location area for all the Pokémon species",
 			callback:    commandExplore,
 		},
+		"catch": {
+			name:        "catch",
+			description: "Catch a Pokémon",
+			callback:    commandCatch,
+		},
 	}
 }
 
-func commandHelp(_ *appConfig) error {
+func commandHelp(_ *appConfig, _ []string) error {
 	help_message := "\nWelcome to the Pokedex!\nUsages:\n"
 	commands := getCliCommands()
 	for _, command := range commands {
@@ -65,12 +70,12 @@ func commandHelp(_ *appConfig) error {
 	return nil
 }
 
-func commandExit(_ *appConfig) error {
+func commandExit(_ *appConfig, _ []string) error {
 	fmt.Println("Goodbye!")
 	return nil
 }
 
-func commandMap(cf *appConfig) error {
+func commandMap(cf *appConfig, _ []string) error {
 	if cf.Next == nil {
 		return fmt.Errorf("no more location areas")
 	}
@@ -88,7 +93,7 @@ func commandMap(cf *appConfig) error {
 	return nil
 }
 
-func commandMapb(cf *appConfig) error {
+func commandMapb(cf *appConfig, _ []string) error {
 	if cf.Previous == nil {
 		return fmt.Errorf("no previous location areas")
 	}
@@ -107,18 +112,16 @@ func commandMapb(cf *appConfig) error {
 	return nil
 }
 
-func commandExplore(cf *appConfig) error {
+func commandExplore(cf *appConfig, args []string) error {
 	const exploreBaseURL = "https://pokeapi.co/api/v2/location-area/"
-	//reset the explore config value to nil after the command is executed
-	defer func() { cf.Explore = nil }()
 
-	if cf.Explore == nil {
+	if len(args) < 2 {
 		return fmt.Errorf("explore command requires a valid location area name")
 	}
 
-	fmt.Printf("Exploring %v ...\n", *cf.Explore)
+	fmt.Printf("Exploring %v ...\n", args[1])
 
-	exploreURL := exploreBaseURL + *cf.Explore
+	exploreURL := exploreBaseURL + args[1] + "/"
 	encounters, err := pokeapi.GetPokemonInLocationArea(exploreURL, cf.Cache)
 	if err != nil {
 		return err
@@ -130,6 +133,14 @@ func commandExplore(cf *appConfig) error {
 	}
 
 	return nil
+}
+
+func commandCatch(cf *appConfig, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("catch command requires a valid Pokémon name")
+	}
+	fmt.Printf("Throwing a Pokéball at %s...\n", args[1])
+	return fmt.Errorf("not implemented")
 }
 
 func main() {
@@ -147,24 +158,18 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("Pokedex > ")
 	for scanner.Scan() {
-		line := scanner.Text()
-		command_str := strings.Split(line, " ")[0]
-		command, ok := commands[command_str]
+		args := strings.Split(scanner.Text(), " ")
+		command, ok := commands[args[0]]
 		if ok {
-			if command.name == "explore" && len(strings.Split(line, " ")) > 1 {
-				config.Explore = &strings.Split(line, " ")[1]
-			}
-
-			err := command.callback(config)
-			if err != nil {
+			if err := command.callback(config, args); err != nil {
 				fmt.Println("Error:", err)
 			}
 			if command.name == "exit" {
 				break
 			}
 		} else {
-			fmt.Printf("Unknown command: %s\n", command_str)
-			commands["help"].callback(nil)
+			fmt.Printf("Unknown command: %s\n", args[0])
+			commands["help"].callback(nil, nil)
 		}
 		fmt.Print("Pokedex > ")
 	}
