@@ -59,6 +59,11 @@ func getCliCommands() map[string]cliCommand {
 			description: "Catch a Pokémon",
 			callback:    commandCatch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "Inspect a Pokémon",
+			callback:    commandInspect,
+		},
 	}
 }
 
@@ -167,6 +172,34 @@ func commandCatch(cf *appConfig, args []string) error {
 	}
 	fmt.Printf("Caught %s!\n", pokemon.Name)
 	cf.Pokedex[pokemon.Name] = *pokemon
+	return nil
+}
+
+func commandInspect(cf *appConfig, args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf(("inspect command requires a valid Pokémon name"))
+	}
+	if pokemon, ok := cf.Pokedex[args[1]]; ok {
+		fmt.Println("Name:", pokemon.Name)
+		fmt.Println("Height:", pokemon.Height)
+		fmt.Println("Weight:", pokemon.Weight)
+		fmt.Println("Stats:")
+		for _, stat := range pokemon.Stats {
+			fmt.Printf("  - %v: %d\n", stat.Stat.Name, stat.BaseStat)
+		}
+		fmt.Println("Types:")
+		for _, t := range pokemon.Types {
+			fmt.Println("  -", t.Type.Name)
+		}
+	} else {
+		fail_phrases := []string{
+			"Who's that Pokémon?",
+			"Could not find Pokémon in the Pokédex",
+			"You need to catch the Pokémon first!",
+			fmt.Sprintf("You have not caught %s yet!", args[1]),
+		}
+		fmt.Println(fail_phrases[rand.Intn(len(fail_phrases))])
+	}
 	return nil
 }
 
