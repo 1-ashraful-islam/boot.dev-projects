@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/1-ashraful-islam/boot.dev-projects/15.PokedexCLI/internal/pokeapi"
@@ -14,6 +15,7 @@ import (
 type appConfig struct {
 	Next     *string
 	Previous *string
+	Explore  *string
 	Cache    *pokecache.Cache
 }
 
@@ -44,6 +46,11 @@ func getCliCommands() map[string]cliCommand {
 			name:        "mapb",
 			description: "Displays the names of previous 20 location areas in the Pokémon world.",
 			callback:    commandMapb,
+		},
+		"explore": {
+			name:        "explore",
+			description: "Explore a location area for all the Pokémon species",
+			callback:    commandExplore,
 		},
 	}
 }
@@ -100,6 +107,31 @@ func commandMapb(cf *appConfig) error {
 	return nil
 }
 
+func commandExplore(cf *appConfig) error {
+	const exploreBaseURL = "https://pokeapi.co/api/v2/location-area/"
+	//reset the explore config value to nil after the command is executed
+	defer func() { cf.Explore = nil }()
+
+	if cf.Explore == nil {
+		return fmt.Errorf("explore command requires a valid location area name")
+	}
+
+	fmt.Printf("Exploring %v ...\n", *cf.Explore)
+
+	exploreURL := exploreBaseURL + *cf.Explore
+	encounters, err := pokeapi.GetPokemonInLocationArea(exploreURL, cf.Cache)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Found Pokémon:")
+	for _, encounter := range encounters.PokemonEncounters {
+		fmt.Println(" - ", encounter.Pokemon.Name)
+	}
+
+	return nil
+}
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -116,8 +148,13 @@ func main() {
 	fmt.Print("Pokedex > ")
 	for scanner.Scan() {
 		line := scanner.Text()
-		command, ok := commands[line]
+		command_str := strings.Split(line, " ")[0]
+		command, ok := commands[command_str]
 		if ok {
+			if command.name == "explore" && len(strings.Split(line, " ")) > 1 {
+				config.Explore = &strings.Split(line, " ")[1]
+			}
+
 			err := command.callback(config)
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -126,6 +163,7 @@ func main() {
 				break
 			}
 		} else {
+			fmt.Printf("Unknown command: %s\n", command_str)
 			commands["help"].callback(nil)
 		}
 		fmt.Print("Pokedex > ")
