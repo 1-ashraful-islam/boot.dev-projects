@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ type appConfig struct {
 	Previous *string
 	Explore  *string
 	Cache    *pokecache.Cache
+	Pokedex  map[string]pokeapi.Pokemon
 }
 
 type cliCommand struct {
@@ -136,11 +138,36 @@ func commandExplore(cf *appConfig, args []string) error {
 }
 
 func commandCatch(cf *appConfig, args []string) error {
+	const pokemonBaseURL = "https://pokeapi.co/api/v2/pokemon/"
+
 	if len(args) < 2 {
 		return fmt.Errorf("catch command requires a valid Pokémon name")
 	}
 	fmt.Printf("Throwing a Pokéball at %s...\n", args[1])
-	return fmt.Errorf("not implemented")
+	pokemonURL := pokemonBaseURL + args[1] + "/"
+	pokemon, err := pokeapi.GetPokemon(pokemonURL, cf.Cache)
+	if err != nil {
+		return err
+	}
+
+	//assuming max base experience is 608 for a Pokémon currently
+	catchChance := min(1, max(0, float64(pokemon.BaseExperience)/700.0))
+
+	if rand.NormFloat64() < catchChance {
+		fail_phrases := []string{
+			"Oh no! The Pokémon broke free!",
+			"Aww! It appeared to be caught!",
+			"Shoot! It was so close too!",
+			fmt.Sprintf("%s was caught! ... Just kidding!", pokemon.Name),
+			"Almost had it!",
+			fmt.Sprintf("%s escaped!", pokemon.Name),
+		}
+		fmt.Println(fail_phrases[rand.Intn(len(fail_phrases))])
+		return nil
+	}
+	fmt.Printf("Caught %s!\n", pokemon.Name)
+	cf.Pokedex[pokemon.Name] = *pokemon
+	return nil
 }
 
 func main() {
@@ -153,6 +180,7 @@ func main() {
 		Next:     &locationURL,
 		Previous: nil,
 		Cache:    pokecache.NewCache(ctx, 360*time.Second),
+		Pokedex:  make(map[string]pokeapi.Pokemon),
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -178,6 +206,6 @@ func main() {
 	}
 
 	cancel()
-	//add a small delay to allow the go routines to exit
+	//add a small delay to allow the go routines to exit gracefully
 	time.Sleep(10 * time.Millisecond)
 }

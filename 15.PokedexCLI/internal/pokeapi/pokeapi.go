@@ -28,6 +28,28 @@ type pokemonInArea struct {
 	} `json:"pokemon_encounters"`
 }
 
+type Pokemon struct {
+	Name                   string `json:"name"`
+	BaseExperience         int    `json:"base_experience"`
+	Height                 int    `json:"height"`
+	Weight                 int    `json:"weight"`
+	LocationAreaEncounters string `json:"location_area_encounters"`
+	Stats                  []struct {
+		BaseStat int `json:"base_stat"`
+		Effort   int `json:"effort"`
+		Stat     struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"stat"`
+	} `json:"stats"`
+	Types []struct {
+		Type struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"type"`
+	} `json:"types"`
+}
+
 func GetLocationArea(url string, cf *pokecache.Cache) (*locationArea, error) {
 
 	body, err := getPokemonData(url, cf)
@@ -55,6 +77,20 @@ func GetPokemonInLocationArea(url string, cf *pokecache.Cache) (*pokemonInArea, 
 	}
 
 	return pokemons, nil
+}
+
+func GetPokemon(url string, cf *pokecache.Cache) (*Pokemon, error) {
+	body, err := getPokemonData(url, cf)
+	if err != nil {
+		return nil, err
+	}
+
+	pokemon := &Pokemon{}
+	if err := json.Unmarshal(body, pokemon); err != nil {
+		return nil, err
+	}
+
+	return pokemon, nil
 }
 
 func getPokemonData(url string, cf *pokecache.Cache) ([]byte, error) {
