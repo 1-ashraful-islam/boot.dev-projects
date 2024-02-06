@@ -163,7 +163,7 @@ func commandCatch(cf *appConfig, args []string) error {
 	//assuming max base experience is 608 for a Pokémon currently
 	catchChance := min(1, max(0, float64(pokemon.BaseExperience)/700.0))
 
-	if rand.NormFloat64() < catchChance {
+	if rand.NormFloat64() > catchChance {
 		fail_phrases := []string{
 			"Oh no! The Pokémon broke free!",
 			"Aww! It appeared to be caught!",
@@ -246,8 +246,24 @@ func commandPokedex(cf *appConfig, _ []string) error {
 		return nil
 	}
 	fmt.Println("Your Pokédex:")
+	pokedex := make([]string, 0)
 	for name := range cf.Pokedex {
-		fmt.Println(" -", name)
+		pokedex = append(pokedex, name)
+	}
+	for i := 0; i < len(pokedex); i += 2 {
+		//2 columns
+		for j := i; j < i+2 && j < len(pokedex); j++ {
+			fmt.Printf(" - %-40s", pokedex[j])
+		}
+		fmt.Println()
+		for k := 0; k < len(cf.Pokedex[pokedex[i]].ASCIIArt); k++ {
+			for j := i; j < i+2 && j < len(pokedex); j++ {
+				fmt.Printf("   %-43s", cf.Pokedex[pokedex[j]].ASCIIArt[k])
+			}
+			fmt.Println()
+		}
+		fmt.Println()
+
 	}
 	return nil
 }
