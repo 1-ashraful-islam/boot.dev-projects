@@ -176,6 +176,10 @@ func commandCatch(cf *appConfig, args []string) error {
 		return nil
 	}
 	fmt.Printf("Caught %s!\n", pokemon.Name)
+	//show the Pokémon caught
+	for _, line := range pokemon.ASCIIArt {
+		fmt.Println(line)
+	}
 	cf.Pokedex[pokemon.Name] = *pokemon
 	return nil
 }
@@ -190,6 +194,7 @@ func commandInspect(cf *appConfig, args []string) error {
 		pokemonStats = append(pokemonStats, fmt.Sprintf("Name: %s", pokemon.Name))
 		pokemonStats = append(pokemonStats, fmt.Sprintf("Height: %d", pokemon.Height))
 		pokemonStats = append(pokemonStats, fmt.Sprintf("Weight: %d", pokemon.Weight))
+		pokemonStats = append(pokemonStats, fmt.Sprintf("Base Experience: %d", pokemon.BaseExperience))
 		pokemonStats = append(pokemonStats, "Stats:")
 		for _, stat := range pokemon.Stats {
 			pokemonStats = append(pokemonStats, fmt.Sprintf("  - %v: %d", stat.Stat.Name, stat.BaseStat))
@@ -298,7 +303,7 @@ func main() {
 			fmt.Printf("Unknown command: %s\n", args[0])
 			commands["help"].callback(nil, nil)
 		}
-		fmt.Print("Pokedex > ")
+		fmt.Print("\nPokedex > ")
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "Reading standard input:", err)
