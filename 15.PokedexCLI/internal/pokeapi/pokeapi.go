@@ -1,10 +1,14 @@
 package pokeapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
 	"io"
 	"net/http"
+
+	image2ascii "github.com/1-ashraful-islam/image2ascii"
 
 	"github.com/1-ashraful-islam/boot.dev-projects/15.PokedexCLI/internal/pokecache"
 )
@@ -29,6 +33,7 @@ type pokemonInArea struct {
 }
 
 type Pokemon struct {
+	ASCIIArt               []string
 	Name                   string `json:"name"`
 	BaseExperience         int    `json:"base_experience"`
 	Height                 int    `json:"height"`
@@ -96,6 +101,18 @@ func GetPokemon(url string, cf *pokecache.Cache) (*Pokemon, error) {
 	pokemon := &Pokemon{}
 	if err := json.Unmarshal(body, pokemon); err != nil {
 		return nil, err
+	}
+
+	imgBytes, err := getPokemonData(pokemon.Sprites.Others.OfficialArtwork.FrontDefault, cf)
+	if err != nil {
+		return nil, err
+	}
+	if img, _, err := image.Decode(bytes.NewReader(imgBytes)); err == nil {
+		if asciiArt, err := image2ascii.CreateASCIIImage(img, 40, 40); err == nil {
+			pokemon.ASCIIArt = asciiArt
+		} else {
+			pokemon.ASCIIArt = []string{"Failed to convert image to ASCII"}
+		}
 	}
 
 	return pokemon, nil

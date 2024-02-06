@@ -1,0 +1,4 @@
+github.com/1-ashraful-islam/image2ascii v0.0.0-20240206082732-61c435188942 h1:cSAcAZ66b6KRKX5CW2XBqI+p4lVMwPRxJayNabBeq1I=
+github.com/1-ashraful-islam/image2ascii v0.0.0-20240206082732-61c435188942/go.mod h1:gDjwCR9daaoVfrKPZLpnVDgwMjWG6u/krNtiauay0KE=
+golang.org/x/image v0.15.0 h1:kOELfmgrmJlw4Cdb7g/QGuB3CvDrXbqEIww/pNtNBm8=
+golang.org/x/image v0.15.0/go.mod h1:HUYqC05R2ZcZ3ejNQsIHQDQiwWM4JBqmm6MKANTp4LE=

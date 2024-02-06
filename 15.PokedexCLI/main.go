@@ -185,17 +185,42 @@ func commandInspect(cf *appConfig, args []string) error {
 		return fmt.Errorf(("inspect command requires a valid Pokémon name"))
 	}
 	if pokemon, ok := cf.Pokedex[args[1]]; ok {
-		fmt.Println("Name:", pokemon.Name)
-		fmt.Println("Official Artwork:", pokemon.Sprites.Others.OfficialArtwork.FrontDefault)
-		fmt.Println("Height:", pokemon.Height)
-		fmt.Println("Weight:", pokemon.Weight)
-		fmt.Println("Stats:")
+
+		pokemonStats := make([]string, 0)
+		pokemonStats = append(pokemonStats, fmt.Sprintf("Name: %s", pokemon.Name))
+		pokemonStats = append(pokemonStats, fmt.Sprintf("Height: %d", pokemon.Height))
+		pokemonStats = append(pokemonStats, fmt.Sprintf("Weight: %d", pokemon.Weight))
+		pokemonStats = append(pokemonStats, "Stats:")
 		for _, stat := range pokemon.Stats {
-			fmt.Printf("  - %v: %d\n", stat.Stat.Name, stat.BaseStat)
+			pokemonStats = append(pokemonStats, fmt.Sprintf("  - %v: %d", stat.Stat.Name, stat.BaseStat))
 		}
-		fmt.Println("Types:")
+		pokemonStats = append(pokemonStats, "Types:")
 		for _, t := range pokemon.Types {
-			fmt.Println("  -", t.Type.Name)
+			pokemonStats = append(pokemonStats, fmt.Sprintf("  - %s", t.Type.Name))
+		}
+
+		// fmt.Println("Name:", pokemon.Name)
+		// fmt.Println("Height:", pokemon.Height)
+		// fmt.Println("Weight:", pokemon.Weight)
+		// fmt.Println("Stats:")
+		// for _, stat := range pokemon.Stats {
+		// 	fmt.Printf("  - %v: %d\n", stat.Stat.Name, stat.BaseStat)
+		// }
+		// fmt.Println("Types:")
+		// for _, t := range pokemon.Types {
+		// 	fmt.Println("  -", t.Type.Name)
+		// }
+
+		for i := 0; i < len(pokemonStats) || i < len(pokemon.ASCIIArt); i++ {
+			stat := ""
+			if i < len(pokemonStats) {
+				stat = pokemonStats[i]
+			}
+			art := ""
+			if i < len(pokemon.ASCIIArt) {
+				art = pokemon.ASCIIArt[i]
+			}
+			fmt.Printf("%-30s %s\n", stat, art)
 		}
 	} else {
 		fail_phrases := []string{
