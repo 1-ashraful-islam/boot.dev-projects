@@ -186,6 +186,7 @@ func commandInspect(cf *appConfig, args []string) error {
 	}
 	if pokemon, ok := cf.Pokedex[args[1]]; ok {
 		fmt.Println("Name:", pokemon.Name)
+		fmt.Println("Official Artwork:", pokemon.Sprites.Others.OfficialArtwork.FrontDefault)
 		fmt.Println("Height:", pokemon.Height)
 		fmt.Println("Weight:", pokemon.Weight)
 		fmt.Println("Stats:")

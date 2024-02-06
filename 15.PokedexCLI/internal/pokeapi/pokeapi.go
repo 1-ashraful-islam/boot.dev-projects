@@ -34,7 +34,15 @@ type Pokemon struct {
 	Height                 int    `json:"height"`
 	Weight                 int    `json:"weight"`
 	LocationAreaEncounters string `json:"location_area_encounters"`
-	Stats                  []struct {
+	Sprites                struct {
+		Others struct {
+			OfficialArtwork struct {
+				FrontDefault string `json:"front_default"`
+			} `json:"official-artwork"`
+		} `json:"other"`
+	} `json:"sprites"`
+
+	Stats []struct {
 		BaseStat int `json:"base_stat"`
 		Effort   int `json:"effort"`
 		Stat     struct {
