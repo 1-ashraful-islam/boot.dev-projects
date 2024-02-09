@@ -8,6 +8,7 @@ This repository contains my implementation of guided and non-guided projects fro
 - [x] **`Maze Solver`** in [**`Python`**](7.maze-solver/) and [**`JavaScript`**](7.maze-solver-html5-js/)
 - [x] [**`Web Crawler (JavaScript)`**](11.web-crawler-html5-js/)
 - [x] [**`Pokédex CLI (GO)`**](15.PokedexCLI/)
+- [ ] [**`Blog Aggregator (GO)`**](18.BlogAggregator/)
 
 ## Usage
 
