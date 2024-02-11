@@ -8,7 +8,7 @@ function normalizeURL(url) {
   return normal_url;
 }
 
-function getURLsFromHTML(htmlBody, currentURL) {
+function getURLsFromHTML(htmlBody, currentURL, sameOrigin = true) {
   const urls = [];
   const dom = new JSDOM(htmlBody);
   const anchors = dom.window.document.querySelectorAll('a');
@@ -16,6 +16,9 @@ function getURLsFromHTML(htmlBody, currentURL) {
   anchors.forEach((anchor) => {
     try {
       const url= new URL(anchor.getAttribute('href'), currentURL);
+      if (sameOrigin && url.origin !== currentURL.origin) {
+        return;
+      }
       urls.push(url);
     } catch (e) {
       console.error(`Invalid URL: ${anchor.href}`);
@@ -81,9 +84,9 @@ async function crawlPage(currentURL, baseURL, pages, crawlDelay, robots, userAge
     //fetch the page
     let htmlBody = await fetchPage(currentURL);
 
-
     //get all urls from the page
-    let urls = getURLsFromHTML(htmlBody, currentURL);
+    let urls = getURLsFromHTML(htmlBody, currentURL, sameOrigin = true);
+
     //crawl each url from the page with delay
     for (let url of urls) {
       await new Promise(resolve => setTimeout(resolve, crawlDelay));
@@ -131,7 +134,7 @@ async function breadthFirstCrawl(baseURL, pages, crawlDelay, robots, userAgent, 
     console.log(`Crawling ${url}`);
     try {
       let htmlBody = await fetchPage(url);
-      let urls = getURLsFromHTML(htmlBody, url);
+      let urls = getURLsFromHTML(htmlBody, url, sameOrigin = true);
 
       urls.forEach(newUrl => {
         const normalizedNewUrl = normalizeURL(newUrl);
