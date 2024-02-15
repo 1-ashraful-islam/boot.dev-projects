@@ -23,3 +23,26 @@ cp .env.example .env
   ```bash
   docker-compose down
   ```
+
+## Additional Go Tools
+
+Docker compose file also installs Go tools (`sqlc` and `goose`) inside a docker container. This setup encapsulates your development environment within Docker, keeping your host machine clean and ensuring consistency across different development setups.
+
+To use `sqlc` and `goose`, you would run commands inside the `go-tools` container. For example, to generate SQLC code, you might use:
+
+```bash
+docker-compose run --rm go-tools sqlc generate
+```
+
+Or to apply migrations with `goose`, you might use:
+
+```bash
+docker-compose run --rm go-tools goose up
+```
+
+Remember to rebuild your Docker Compose services if you make changes to the Dockerfile or need to update the tools:
+
+```bash
+docker-compose build go-tools
+```
+
