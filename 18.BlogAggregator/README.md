@@ -21,7 +21,7 @@ cp .env.example .env
 3. Run the following command to use `goose` to apply migrations
 
   ```bash
-  docker-compose run --rm go-tools sh /app/run_migrations.sh up
+  docker-compose run --rm go-tools goose up
   ```
 
 3. Run the following command to stop postgresql server using docker-compose
