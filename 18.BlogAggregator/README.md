@@ -24,7 +24,13 @@ cp .env.example .env
   docker-compose run --rm go-tools goose up
   ```
 
-3. Run the following command to stop postgresql server using docker-compose
+4. Run the following commands to generate `sqlc` code
+
+  ```bash
+  docker-compose run --rm go-tools sqlc generate
+  ```
+
+5. Run the following command to stop postgresql server using docker-compose
 
   ```bash
   docker-compose down
