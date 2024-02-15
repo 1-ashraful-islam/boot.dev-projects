@@ -26,6 +26,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.go-tools
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CONN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${DATABASE_NAME}
     volumes:
       - .:/app
     depends_on:

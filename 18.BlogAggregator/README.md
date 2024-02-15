@@ -6,7 +6,7 @@ It also utilizes a long-running service worker that reaches out over the interne
 
 ## Usage
 
-1. Rename the `.env.example` file to `.env` and fill in the required environment variables.
+1. Rename the `.env.example` file to `.env` and fill in the required environment variables. Make sure to have proper `DATABASE_NAME` in the `.env` file.
 
 ```bash
 cp .env.example .env
@@ -16,6 +16,12 @@ cp .env.example .env
 
   ```bash
   docker-compose up -d
+  ```
+
+3. Run the following command to use `goose` to apply migrations
+
+  ```bash
+  docker-compose run --rm go-tools sh /app/run_migrations.sh up
   ```
 
 3. Run the following command to stop postgresql server using docker-compose
