@@ -8,33 +8,33 @@ It also utilizes a long-running service worker that reaches out over the interne
 
 1. Rename the `.env.example` file to `.env` and fill in the required environment variables. Make sure to have proper `DATABASE_NAME` in the `.env` file.
 
-```bash
-cp .env.example .env
-```
+    ```bash
+    cp .env.example .env
+    ```
 
 2. Run the following command to start postgresql server using docker-compose
 
-  ```bash
-  docker-compose up -d
-  ```
+    ```bash
+    docker-compose up -d
+    ```
 
 3. Run the following command to use `goose` to apply migrations
 
-  ```bash
-  docker-compose run --rm go-tools goose up
-  ```
+    ```bash
+    docker-compose run --rm go-tools goose up
+    ```
 
 4. Run the following commands to generate `sqlc` code
 
-  ```bash
-  docker-compose run --rm go-tools sqlc generate
-  ```
+    ```bash
+    docker-compose run --rm go-tools sqlc generate
+    ```
 
 5. Run the following command to stop postgresql server using docker-compose
 
-  ```bash
-  docker-compose down
-  ```
+    ```bash
+    docker-compose down
+    ```
 
 ## Additional Go Tools
 
@@ -57,4 +57,3 @@ Remember to rebuild your Docker Compose services if you make changes to the Dock
 ```bash
 docker-compose build go-tools
 ```
-

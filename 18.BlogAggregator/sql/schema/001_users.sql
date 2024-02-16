@@ -8,3 +8,6 @@ CREATE TABLE users (
 
 -- +goose Down
 DROP TABLE users;
+
+-- +goose Statement Comments
+-- This migration creates the users table.

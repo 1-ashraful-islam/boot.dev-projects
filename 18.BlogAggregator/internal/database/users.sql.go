@@ -15,7 +15,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, created_at, updated_at, name)
 VALUES ($1, $2, $3, $4)
-RETURNING id, created_at, updated_at, name
+RETURNING id, created_at, updated_at, name, api_key
 `
 
 type CreateUserParams struct {
@@ -38,6 +38,109 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Name,
+		&i.ApiKey,
+	)
+	return i, err
+}
+
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users WHERE id = $1
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
+	return err
+}
+
+const getUser = `-- name: GetUser :one
+SELECT id, created_at, updated_at, name, api_key FROM users WHERE api_key = $1
+`
+
+func (q *Queries) GetUser(ctx context.Context, apiKey string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUser, apiKey)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.ApiKey,
+	)
+	return i, err
+}
+
+const getUserByName = `-- name: GetUserByName :one
+SELECT id, created_at, updated_at, name, api_key FROM users WHERE name = $1
+`
+
+func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByName, name)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.ApiKey,
+	)
+	return i, err
+}
+
+const getUsers = `-- name: GetUsers :many
+SELECT id, created_at, updated_at, name, api_key FROM users
+`
+
+func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, getUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.ApiKey,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET updated_at = $2, name = $3
+WHERE id = $1
+RETURNING id, created_at, updated_at, name, api_key
+`
+
+type UpdateUserParams struct {
+	ID        uuid.UUID
+	UpdatedAt time.Time
+	Name      string
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUser, arg.ID, arg.UpdatedAt, arg.Name)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.ApiKey,
 	)
 	return i, err
 }
