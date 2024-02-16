@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -63,31 +64,87 @@ func (cfg *apiConfig) handlerUsersGet(w http.ResponseWriter, r *http.Request, u 
 	respondWithJSON(w, http.StatusOK, u)
 }
 
+func (cfg *apiConfig) handlerUsersPost() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var u struct {
+			Name string `json:"name"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+			cfg.Logger.Printf("Failed to decode request body: %+v", err)
+			respondWithError(w, http.StatusBadRequest, "Invalid request payload. Please provide a valid JSON object")
+			return
+		}
+		defer r.Body.Close()
+
+		if u.Name == "" {
+			respondWithError(w, http.StatusBadRequest, "Name is required")
+			return
+		}
+
+		//check if user already exists
+		if _, err := cfg.DB.GetUserByName(r.Context(), u.Name); err == nil {
+			respondWithError(w, http.StatusBadRequest, "User already exists")
+			return
+		}
+
+		// Create a new user
+		createdUser, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Name:      u.Name,
+		})
+
+		if err != nil {
+			cfg.Logger.Printf("Failed to create user: %+v", err)
+			respondWithError(w, http.StatusInternalServerError, "Failed to create user")
+			return
+		}
+
+		respondWithJSON(w, http.StatusCreated, createdUser)
+
+	}
+}
+
 func main() {
+
+	// Open the log file
+	logFile, err := os.OpenFile("logs/blog-aggregator.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalln("Failed to open log file:", err)
+	}
+
+	// Create a multi writer
+	multiWriter := io.MultiWriter(logFile, os.Stdout)
+
+	// Create the logger
+	logger := log.New(multiWriter, "", log.Lshortfile|log.LstdFlags)
 
 	// Load .env file
 	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		logger.Fatalf("Error loading .env file: %v", err)
 	}
 
 	// Connect to the database
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatalf(errors.Wrap(err, "could not connect to the database").Error())
+		logger.Fatalf(errors.Wrap(err, "could not connect to the database").Error())
 	}
 	defer db.Close()
 
 	// Check the connection
 	err = db.Ping()
 	if err != nil {
-		log.Fatalf(errors.Wrap(err, "could not ping the database").Error())
+		logger.Fatalf(errors.Wrap(err, "could not ping the database").Error())
 	}
 
 	dbQueries := database.New(db)
 
 	// Create a new instance of the API config
 	apiConfig := &apiConfig{
-		DB: dbQueries,
+		DB:     dbQueries,
+		Logger: logger,
 	}
 
 	port := os.Getenv("PORT")
@@ -114,7 +171,7 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen and Serve returned err: %v", err)
+			logger.Fatalf("listen and Serve returned err: %v", err)
 		}
 	}()
 
@@ -125,7 +182,7 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctxShutDown); err != nil {
-		log.Fatalf("HTTP server shutdown failed: %v", err)
+		logger.Fatalf("HTTP server shutdown failed: %v", err)
 	}
 
 	log.Println("HTTP server shutdown complete")
@@ -164,7 +221,7 @@ func v1Router(apiConfig *apiConfig) http.Handler {
 		respondWithError(w, http.StatusInternalServerError, "Internal server error")
 	})
 
-	r.Post("/users", createUser(apiConfig))
+	r.Post("/users", apiConfig.handlerUsersPost())
 	r.Get("/users", apiConfig.middlewareAuth(apiConfig.handlerUsersGet))
 
 	return r
@@ -178,53 +235,12 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	response, err := json.Marshal(payload)
 
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to marshal JSON response"+err.Error())
+		log.Printf("Failed to marshal JSON response: %+v", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to marshal JSON response")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
-}
-
-func createUser(apiConfig *apiConfig) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var u struct {
-			Name string `json:"name"`
-		}
-
-		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-			log.Printf("Failed to decode request body: %+v", err)
-			respondWithError(w, http.StatusBadRequest, "Invalid request payload. Please provide a valid JSON object")
-			return
-		}
-		defer r.Body.Close()
-
-		if u.Name == "" {
-			respondWithError(w, http.StatusBadRequest, "Name is required")
-			return
-		}
-
-		//check if user already exists
-		if _, err := apiConfig.DB.GetUserByName(r.Context(), u.Name); err == nil {
-			respondWithError(w, http.StatusBadRequest, "User already exists")
-			return
-		}
-
-		// Create a new user
-		createdUser, err := apiConfig.DB.CreateUser(r.Context(), database.CreateUserParams{
-			ID:        uuid.New(),
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			Name:      u.Name,
-		})
-
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, "Failed to create user: "+err.Error())
-			return
-		}
-
-		respondWithJSON(w, http.StatusCreated, createdUser)
-
-	}
 }
