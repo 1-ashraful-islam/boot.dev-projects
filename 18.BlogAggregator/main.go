@@ -107,6 +107,177 @@ func (cfg *apiConfig) handlerUsersPost() http.HandlerFunc {
 	}
 }
 
+func (cfg *apiConfig) handlerFeedsPost(w http.ResponseWriter, r *http.Request, u database.User) {
+	var f struct {
+		Title       string `json:"title"`
+		URL         string `json:"url"`
+		Description string `json:"description"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&f); err != nil {
+		cfg.Logger.Printf("Failed to decode request body: %+v", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload. Please provide a valid JSON object")
+		return
+	}
+	defer r.Body.Close()
+
+	if f.Title == "" || f.URL == "" || f.Description == "" {
+		respondWithError(w, http.StatusBadRequest, "title, url, and description fields are required")
+		return
+	}
+
+	// check if feed already exists
+	if _, err := cfg.DB.GetFeedByURL(r.Context(), f.URL); err == nil {
+		respondWithError(w, http.StatusBadRequest, "Feed already exists")
+		return
+	}
+
+	feed, err := cfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
+		ID:          uuid.New(),
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+		UserID:      u.ID,
+		Url:         f.URL,
+		Title:       f.Title,
+		Description: f.Description,
+	})
+
+	if err != nil {
+
+		cfg.Logger.Printf("Failed to create feed: %+v", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to create feed")
+		return
+	}
+
+	// create feed_follow for the user
+	feed_follow, err := cfg.DB.CreateFeedFollow(r.Context(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		FeedID:    feed.ID,
+		UserID:    u.ID,
+	})
+
+	if err != nil {
+		cfg.Logger.Printf("Failed to create feed follow: %+v", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to create feed follow")
+		return
+	}
+	var result = struct {
+		Feed       database.Feed       `json:"feed"`
+		FeedFollow database.FeedFollow `json:"feed_follow"`
+	}{
+		Feed:       feed,
+		FeedFollow: feed_follow,
+	}
+
+	respondWithJSON(w, http.StatusCreated, result)
+}
+
+func (cfg *apiConfig) handlerFeedsGet() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		feeds, err := cfg.DB.GetFeeds(r.Context())
+		if err != nil {
+			cfg.Logger.Printf("Failed to get feeds: %+v", err)
+			respondWithError(w, http.StatusInternalServerError, "Failed to get feeds")
+			return
+		}
+
+		respondWithJSON(w, http.StatusOK, feeds)
+	}
+}
+
+func (cfg *apiConfig) handlerFeedFollowsGet(w http.ResponseWriter, r *http.Request, u database.User) {
+	feed_follows, err := cfg.DB.GetFeedFollowsByUser(r.Context(), u.ID)
+	if err != nil {
+		cfg.Logger.Printf("Failed to get feed_follows: %+v", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to get feed_follows")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, feed_follows)
+}
+
+func (cfg *apiConfig) handlerFeedFollowsPost(w http.ResponseWriter, r *http.Request, u database.User) {
+	var ff struct {
+		FeedID uuid.UUID `json:"feed_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&ff); err != nil {
+		cfg.Logger.Printf("Failed to decode request body: %+v", err)
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload. Please provide a valid JSON object")
+		return
+	}
+	defer r.Body.Close()
+
+	if ff.FeedID == uuid.Nil {
+		respondWithError(w, http.StatusBadRequest, "feed_id is required")
+		return
+	}
+
+	// check if feed exists
+	if _, err := cfg.DB.GetFeedByID(r.Context(), ff.FeedID); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Feed does not exist")
+		return
+	}
+
+	// check if feed_follow already exists
+	if _, err := cfg.DB.GetFeedFollows(r.Context(), database.GetFeedFollowsParams{FeedID: ff.FeedID, UserID: u.ID}); err == nil {
+		respondWithError(w, http.StatusBadRequest, "Feed follow already exists")
+		return
+	}
+
+	feedFollow, err := cfg.DB.CreateFeedFollow(r.Context(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		FeedID:    ff.FeedID,
+		UserID:    u.ID,
+	})
+
+	if err != nil {
+		cfg.Logger.Printf("Failed to create feed follow: %+v", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to create feed follow")
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, feedFollow)
+}
+
+func (cfg *apiConfig) handlerFeedFollowsDelete(w http.ResponseWriter, r *http.Request, u database.User) {
+	feedFollowID := chi.URLParam(r, "feed_follows_id")
+	if feedFollowID == "" {
+		respondWithError(w, http.StatusBadRequest, "feed_follows_id is required")
+		return
+	}
+
+	ffID, err := uuid.Parse(feedFollowID)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid feed_follows_id")
+		return
+	}
+
+	// check if feed_follow exists
+	if _, err := cfg.DB.GetFeedFollows(r.Context(), database.GetFeedFollowsParams{FeedID: ffID, UserID: u.ID}); err != nil {
+		cfg.Logger.Printf("Failed to get feed follow for feed_id %v: %+v", ffID, err)
+		respondWithError(w, http.StatusBadRequest, "Feed follow does not exist")
+		return
+	}
+
+	err = cfg.DB.DeleteFeedFollow(r.Context(), database.DeleteFeedFollowParams{
+		FeedID: ffID,
+		UserID: u.ID,
+	})
+	if err != nil {
+		cfg.Logger.Printf("Failed to delete feed follow: %+v", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to delete feed follow")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+
+}
+
 func main() {
 
 	// Open the log file
@@ -209,10 +380,6 @@ func middlewareCors() func(next http.Handler) http.Handler {
 func v1Router(apiConfig *apiConfig) http.Handler {
 	r := chi.NewRouter()
 
-	// r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Write([]byte("Hello world from v1 router"))
-	// })
-
 	r.Get("/readiness", func(w http.ResponseWriter, r *http.Request) {
 		respondWithJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
@@ -223,6 +390,13 @@ func v1Router(apiConfig *apiConfig) http.Handler {
 
 	r.Post("/users", apiConfig.handlerUsersPost())
 	r.Get("/users", apiConfig.middlewareAuth(apiConfig.handlerUsersGet))
+
+	r.Post("/feeds", apiConfig.middlewareAuth(apiConfig.handlerFeedsPost))
+	r.Get("/feeds", apiConfig.handlerFeedsGet())
+
+	r.Post("/feed_follows", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsPost))
+	r.Get("/feed_follows", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsGet))
+	r.Delete("/feed_follows/{feed_follows_id}", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsDelete))
 
 	return r
 }

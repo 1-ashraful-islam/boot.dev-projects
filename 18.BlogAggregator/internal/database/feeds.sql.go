@@ -21,13 +21,13 @@ INSERT INTO feeds (
 `
 
 type CreateFeedParams struct {
-	ID          uuid.UUID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	UserID      uuid.UUID
-	Url         string
-	Title       string
-	Description string
+	ID          uuid.UUID `json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	UserID      uuid.UUID `json:"user_id"`
+	Url         string    `json:"url"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
 }
 
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
@@ -51,4 +51,77 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.Description,
 	)
 	return i, err
+}
+
+const getFeedByID = `-- name: GetFeedByID :one
+SELECT id, created_at, updated_at, user_id, url, title, description FROM feeds WHERE id = $1
+`
+
+func (q *Queries) GetFeedByID(ctx context.Context, id uuid.UUID) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getFeedByID, id)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserID,
+		&i.Url,
+		&i.Title,
+		&i.Description,
+	)
+	return i, err
+}
+
+const getFeedByURL = `-- name: GetFeedByURL :one
+SELECT id, created_at, updated_at, user_id, url, title, description FROM feeds WHERE url = $1
+`
+
+func (q *Queries) GetFeedByURL(ctx context.Context, url string) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getFeedByURL, url)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserID,
+		&i.Url,
+		&i.Title,
+		&i.Description,
+	)
+	return i, err
+}
+
+const getFeeds = `-- name: GetFeeds :many
+SELECT id, created_at, updated_at, user_id, url, title, description FROM feeds
+`
+
+func (q *Queries) GetFeeds(ctx context.Context) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, getFeeds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Feed
+	for rows.Next() {
+		var i Feed
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.UserID,
+			&i.Url,
+			&i.Title,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
