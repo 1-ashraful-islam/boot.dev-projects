@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/1-ashraful-islam/boot.dev-projects/18.BlogAggregator/internal/database"
+	"github.com/1-ashraful-islam/boot.dev-projects/18.BlogAggregator/internal/scrapper"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -28,6 +29,28 @@ import (
 type apiConfig struct {
 	DB     *database.Queries
 	Logger *log.Logger
+}
+
+func (cfg *apiConfig) ScrapeFeeds(ctx context.Context, t time.Duration, n int32) {
+	ticker := time.NewTicker(t)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf("Returning from ScrapeFeeds")
+			return
+		case <-ticker.C:
+			feeds, err := cfg.DB.GetNextFeedsToFetch(ctx, n)
+			if err != nil {
+				cfg.Logger.Printf("Failed to get feeds to fetch: %+v", err)
+				continue
+			}
+			scrapper.ScrapeFeeds(ctx, cfg.DB, feeds)
+
+		}
+	}
+
 }
 
 type authedHandler func(w http.ResponseWriter, r *http.Request, u database.User)
@@ -339,6 +362,9 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	// test the scrapper
+	go apiConfig.ScrapeFeeds(ctx, 1*time.Minute, 10)
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
