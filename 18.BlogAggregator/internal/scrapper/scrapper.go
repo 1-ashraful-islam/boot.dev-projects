@@ -2,10 +2,13 @@ package scrapper
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/1-ashraful-islam/boot.dev-projects/18.BlogAggregator/internal/database"
 )
@@ -31,9 +34,22 @@ func ScrapeFeeds(ctx context.Context, db *database.Queries, feeds []database.Fee
 
 		feedData := &FeedData{}
 
-		if err := xml.Unmarshal(body, &feedData); err != nil {
+		if err := xml.Unmarshal(body, &feedData); err != nil || len(feedData.Items) == 0 {
 			fmt.Println("Error parsing feed", feed.Url, err)
 			continue
+		}
+
+		// update the last fetched at time
+		_, err = db.MarkFeedAsFetched(ctx, database.MarkFeedAsFetchedParams{
+			ID: feed.ID,
+			LastFetchedAt: sql.NullTime{
+				Time:  time.Now(),
+				Valid: true,
+			},
+			UpdatedAt: time.Now(),
+		})
+		if err != nil {
+			log.Println("Error updating feed to the database", feed.ID, err)
 		}
 
 		for _, item := range feedData.Items {
