@@ -6,57 +6,55 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/1-ashraful-islam/boot.dev-projects/18.BlogAggregator/internal/database"
+	"github.com/pkg/errors"
 )
 
 type FeedData struct {
 	Items []struct {
-		Title string `xml:"title"`
-		Link  string `xml:"link"`
+		Title       string `xml:"title"`
+		Link        string `xml:"link"`
+		PubDate     string `xml:"pubDate"`
+		Description string `xml:"description"`
 	} `xml:"channel>item"`
 }
 
-func ScrapeFeeds(ctx context.Context, db *database.Queries, feeds []database.Feed) {
-	for _, feed := range feeds {
-		// Scrape the feed
-		// Save the feed to the database
-		fmt.Println("Scraping feed", feed.Url)
+func ScrapeFeed(ctx context.Context, db *database.Queries, feed database.Feed) error {
+	// Scrape the feed
+	// Save the feed to the database
+	fmt.Println("Scraping feed", feed.Url)
 
-		body, err := fetchURL(feed.Url)
-		if err != nil {
-			fmt.Println("Error fetching feed", feed.Url, err)
-			continue
-		}
-
-		feedData := &FeedData{}
-
-		if err := xml.Unmarshal(body, &feedData); err != nil || len(feedData.Items) == 0 {
-			fmt.Println("Error parsing feed", feed.Url, err)
-			continue
-		}
-
-		// update the last fetched at time
-		_, err = db.MarkFeedAsFetched(ctx, database.MarkFeedAsFetchedParams{
-			ID: feed.ID,
-			LastFetchedAt: sql.NullTime{
-				Time:  time.Now(),
-				Valid: true,
-			},
-			UpdatedAt: time.Now(),
-		})
-		if err != nil {
-			log.Println("Error updating feed to the database", feed.ID, err)
-		}
-
-		for _, item := range feedData.Items {
-			fmt.Printf("Found title: %s\n  url: %s\n\n", item.Title, item.Link)
-		}
-
+	body, err := fetchURL(feed.Url)
+	if err != nil {
+		return errors.Wrap(err, "fetching feed failed for "+feed.Url)
 	}
+
+	feedData := &FeedData{}
+
+	if err := xml.Unmarshal(body, &feedData); err != nil || len(feedData.Items) == 0 {
+		return errors.Wrap(err, "parsing feed failed for "+feed.Url)
+	}
+
+	// update the last fetched at time
+	_, err = db.MarkFeedAsFetched(ctx, database.MarkFeedAsFetchedParams{
+		ID: feed.ID,
+		LastFetchedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		return errors.Wrap(err, "updating feed to the database for "+feed.Url)
+	}
+
+	for _, item := range feedData.Items {
+		fmt.Printf("Found title: %s\n  url: %s\n\n", item.Title, item.Link)
+	}
+	return nil
 }
 
 func fetchURL(url string) ([]byte, error) {

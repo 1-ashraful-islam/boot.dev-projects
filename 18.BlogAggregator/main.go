@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -50,7 +51,21 @@ func (cfg *apiConfig) ScrapeFeeds(ctx context.Context, t time.Duration, n int32)
 				log.Println("No feeds to fetch. Sleeping...")
 				continue
 			}
-			scrapper.ScrapeFeeds(ctx, cfg.DB, feeds)
+
+			var wg sync.WaitGroup
+			for _, feed := range feeds {
+				wg.Add(1)
+				go func(feed database.Feed) {
+					defer wg.Done()
+
+					err := scrapper.ScrapeFeed(ctx, cfg.DB, feed)
+					if err != nil {
+						cfg.Logger.Printf("Failed to scrape feed: %+v", err)
+					}
+				}(feed)
+
+			}
+			wg.Wait()
 
 		}
 	}
