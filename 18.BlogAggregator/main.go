@@ -46,6 +46,10 @@ func (cfg *apiConfig) ScrapeFeeds(ctx context.Context, t time.Duration, n int32)
 				cfg.Logger.Printf("Failed to get feeds to fetch: %+v", err)
 				continue
 			}
+			if len(feeds) == 0 {
+				log.Println("No feeds to fetch. Sleeping...")
+				continue
+			}
 			scrapper.ScrapeFeeds(ctx, cfg.DB, feeds)
 
 		}
