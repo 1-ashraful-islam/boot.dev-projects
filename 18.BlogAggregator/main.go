@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -21,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
 	"github.com/joho/godotenv"
@@ -320,6 +322,38 @@ func (cfg *apiConfig) handlerFeedFollowsDelete(w http.ResponseWriter, r *http.Re
 
 }
 
+func (cfg *apiConfig) handlerPostsGet(w http.ResponseWriter, r *http.Request, u database.User) {
+	queries := r.URL.Query()
+	offsetQ := queries.Get("offset")
+	limitQ := queries.Get("limit")
+
+	if offsetQ == "" {
+		offsetQ = "0" // default to 0
+	}
+	if limitQ == "" {
+		limitQ = "10" // default to 10
+	}
+	//convert to int
+	offset, err1 := strconv.Atoi(offsetQ)
+	limit, err2 := strconv.Atoi(limitQ)
+	if err1 != nil || err2 != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid offset or limit")
+		return
+	}
+
+	posts, err := cfg.DB.GetPostsByUser(r.Context(), database.GetPostsByUserParams{
+		UserID: u.ID,
+		Offset: int32(offset),
+		Limit:  int32(limit),
+	})
+	if err != nil {
+		cfg.Logger.Printf("Failed to get posts for user %v: %+v", u.ID, err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to get posts")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, posts)
+}
+
 func main() {
 
 	// Open the log file
@@ -425,6 +459,9 @@ func middlewareCors() func(next http.Handler) http.Handler {
 func v1Router(apiConfig *apiConfig) http.Handler {
 	r := chi.NewRouter()
 
+	//strip trailing slashes
+	r.Use(middleware.StripSlashes)
+
 	r.Get("/readiness", func(w http.ResponseWriter, r *http.Request) {
 		respondWithJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
@@ -442,6 +479,8 @@ func v1Router(apiConfig *apiConfig) http.Handler {
 	r.Post("/feed_follows", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsPost))
 	r.Get("/feed_follows", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsGet))
 	r.Delete("/feed_follows/{feed_follows_id}", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsDelete))
+
+	r.Get("/posts", apiConfig.middlewareAuth(apiConfig.handlerPostsGet))
 
 	return r
 }
