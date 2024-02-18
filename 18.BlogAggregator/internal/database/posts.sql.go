@@ -14,10 +14,10 @@ import (
 
 const createPost = `-- name: CreatePost :one
 INSERT INTO posts (
-  id, created_at, updated_at, feed_id, title, url, description, published_at
+  id, created_at, updated_at, feed_id, title, url, description, publish_date
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8
-) RETURNING id, created_at, updated_at, feed_id, title, url, description, published_at
+) RETURNING id, created_at, updated_at, feed_id, title, url, description, publish_date
 `
 
 type CreatePostParams struct {
@@ -28,7 +28,7 @@ type CreatePostParams struct {
 	Title       string    `json:"title"`
 	Url         string    `json:"url"`
 	Description string    `json:"description"`
-	PublishedAt time.Time `json:"published_at"`
+	PublishDate time.Time `json:"publish_date"`
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, error) {
@@ -40,7 +40,7 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		arg.Title,
 		arg.Url,
 		arg.Description,
-		arg.PublishedAt,
+		arg.PublishDate,
 	)
 	var i Post
 	err := row.Scan(
@@ -51,13 +51,33 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		&i.Title,
 		&i.Url,
 		&i.Description,
-		&i.PublishedAt,
+		&i.PublishDate,
+	)
+	return i, err
+}
+
+const getPostByURL = `-- name: GetPostByURL :one
+SELECT id, created_at, updated_at, feed_id, title, url, description, publish_date FROM posts WHERE url = $1
+`
+
+func (q *Queries) GetPostByURL(ctx context.Context, url string) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getPostByURL, url)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.FeedID,
+		&i.Title,
+		&i.Url,
+		&i.Description,
+		&i.PublishDate,
 	)
 	return i, err
 }
 
 const getPostsByUser = `-- name: GetPostsByUser :many
-SELECT id, created_at, updated_at, feed_id, title, url, description, published_at FROM posts WHERE feed_id IN (SELECT id FROM feeds WHERE user_id = $1) ORDER BY published_at DESC OFFSET $2 LIMIT $3
+SELECT id, created_at, updated_at, feed_id, title, url, description, publish_date FROM posts WHERE feed_id IN (SELECT id FROM feeds WHERE user_id = $1) ORDER BY publish_date DESC OFFSET $2 LIMIT $3
 `
 
 type GetPostsByUserParams struct {
@@ -83,7 +103,7 @@ func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) 
 			&i.Title,
 			&i.Url,
 			&i.Description,
-			&i.PublishedAt,
+			&i.PublishDate,
 		); err != nil {
 			return nil, err
 		}

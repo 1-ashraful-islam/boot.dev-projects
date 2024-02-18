@@ -38,7 +38,7 @@ type Post struct {
 	Title       string    `json:"title"`
 	Url         string    `json:"url"`
 	Description string    `json:"description"`
-	PublishedAt time.Time `json:"published_at"`
+	PublishDate time.Time `json:"publish_date"`
 }
 
 type User struct {

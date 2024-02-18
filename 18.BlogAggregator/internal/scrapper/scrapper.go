@@ -6,10 +6,12 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/1-ashraful-islam/boot.dev-projects/18.BlogAggregator/internal/database"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -52,8 +54,32 @@ func ScrapeFeed(ctx context.Context, db *database.Queries, feed database.Feed) e
 	}
 
 	for _, item := range feedData.Items {
-		fmt.Printf("Found title: %s\n  url: %s\n\n", item.Title, item.Link)
+
+		// Check if the post already exists
+		if _, err := db.GetPostByURL(ctx, item.Link); err == nil {
+			continue
+		}
+		parsedTime, err := time.Parse(time.RFC1123, item.PubDate)
+		if err != nil {
+			return errors.Wrap(err, "parsing published time failed for "+feed.Url+"expected format: "+time.RFC1123+" got: "+item.PubDate)
+		}
+
+		_, err = db.CreatePost(ctx, database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			FeedID:      feed.ID,
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: item.Description,
+			PublishDate: parsedTime,
+		})
+		if err != nil {
+			return errors.Wrap(err, "creating post to the database for "+feed.Url)
+		}
 	}
+	log.Println("Scraped feed", feed.Url, "with", len(feedData.Items), "items")
+
 	return nil
 }
 
