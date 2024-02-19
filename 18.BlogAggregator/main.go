@@ -417,7 +417,13 @@ func main() {
 	defer stop()
 
 	// test the scrapper
-	go apiConfig.ScrapeFeeds(ctx, 1*time.Minute, 10)
+	scraperIntervalStr := os.Getenv("SCRAPER_INTERVAL")
+	scraperInterval, err := time.ParseDuration(scraperIntervalStr)
+	if err != nil {
+		logger.Printf("Failed to parse SCRAPE_INTERVAL: %v. Default time of 10 minutes used", err)
+		scraperInterval = 10 * time.Minute
+	}
+	go apiConfig.ScrapeFeeds(ctx, scraperInterval, 10)
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
