@@ -27,16 +27,23 @@ const modalStyles = {
 
 const FeedList: React.FC = () => {
   const [feeds, setFeeds] = useState<Feed[]>([]);
+  const [fetchError, setFetchError] = useState<string>("");
   const [modalIsOpen, setModalIsOpen] = useState(false);
 
   const [isFormVisible, setIsFormVisible] = useState(false);
 
   useEffect(() => {
     const fetchFeeds = async () => {
-      const response = await fetch(`http://localhost:8080/v1/feeds`);
-      if (response.ok) {
-        const data: Feed[] = await response.json();
-        setFeeds(data);
+      try {
+        const response = await fetch(`http://localhost:8080/v1/feeds`);
+        if (response.ok) {
+          const data: Feed[] = await response.json();
+          setFeeds(data);
+          setFetchError("");
+        }
+      } catch (error) {
+        setFetchError("Error fetching / refreshing feeds");
+        console.error("Error fetching feeds", error);
       }
     };
 
@@ -79,6 +86,7 @@ const FeedList: React.FC = () => {
         </h2>
         {isFormVisible && <NewFeedForm />}
       </div>
+      {fetchError && <div className="network-error">{fetchError}</div>}
       <ul>
         {feeds.map((feed) => (
           <li key={feed.id}>

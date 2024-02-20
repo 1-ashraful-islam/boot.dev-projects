@@ -46,3 +46,12 @@
   background-color: #61dafb;
   color: #282c34;
 }
+
+.network-error {
+  color: red;
+  border: 1px solid #d83e3e;
+  background-color: #a4274f3c;
+  border-radius: 5px;
+  padding: 10px;
+  font-weight: bold;
+}
