@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/1-ashraful-islam/boot.dev-projects/18.BlogAggregator/internal/database"
@@ -59,9 +60,9 @@ func ScrapeFeed(ctx context.Context, db *database.Queries, feed database.Feed) e
 		if _, err := db.GetPostByURL(ctx, item.Link); err == nil {
 			continue
 		}
-		parsedTime, err := time.Parse(time.RFC1123, item.PubDate)
+		parsedTime, err := parseTime(item.PubDate)
 		if err != nil {
-			return errors.Wrap(err, "parsing published time failed for "+feed.Url+"expected format: "+time.RFC1123+" got: "+item.PubDate)
+			return errors.Wrap(err, "parsing published time failed for "+feed.Url)
 		}
 
 		_, err = db.CreatePost(ctx, database.CreatePostParams{
@@ -95,4 +96,22 @@ func fetchURL(url string) ([]byte, error) {
 	}
 
 	return io.ReadAll(resp.Body)
+}
+
+func parseTime(s string) (time.Time, error) {
+	var formats = []string{time.RFC1123Z, time.RFC1123}
+	var parsedTime time.Time
+	var err error
+
+	for _, format := range formats {
+		parsedTime, err = time.Parse(format, s)
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return time.Time{}, errors.Wrap(err, " expected formats: "+strings.Join(formats, ", ")+" got: "+s)
+	}
+	return parsedTime, nil
 }
