@@ -76,6 +76,48 @@ func (q *Queries) GetPostByURL(ctx context.Context, url string) (Post, error) {
 	return i, err
 }
 
+const getPostsByFeedID = `-- name: GetPostsByFeedID :many
+SELECT id, created_at, updated_at, feed_id, title, url, description, publish_date FROM posts WHERE feed_id = $1 ORDER BY publish_date DESC OFFSET $2 LIMIT $3
+`
+
+type GetPostsByFeedIDParams struct {
+	FeedID uuid.UUID `json:"feed_id"`
+	Offset int32     `json:"offset"`
+	Limit  int32     `json:"limit"`
+}
+
+func (q *Queries) GetPostsByFeedID(ctx context.Context, arg GetPostsByFeedIDParams) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsByFeedID, arg.FeedID, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.FeedID,
+			&i.Title,
+			&i.Url,
+			&i.Description,
+			&i.PublishDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPostsByUser = `-- name: GetPostsByUser :many
 SELECT id, created_at, updated_at, feed_id, title, url, description, publish_date FROM posts WHERE feed_id IN (SELECT id FROM feeds WHERE user_id = $1) ORDER BY publish_date DESC OFFSET $2 LIMIT $3
 `

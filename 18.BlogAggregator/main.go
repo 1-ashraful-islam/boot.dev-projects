@@ -354,6 +354,50 @@ func (cfg *apiConfig) handlerPostsGet(w http.ResponseWriter, r *http.Request, u 
 	respondWithJSON(w, http.StatusOK, posts)
 }
 
+func (cfg *apiConfig) handlerPostsFeedIdGet(w http.ResponseWriter, r *http.Request) {
+	feedID := chi.URLParam(r, "feed_id")
+	if feedID == "" {
+		respondWithError(w, http.StatusBadRequest, "feed_id is required")
+		return
+	}
+
+	fID, err := uuid.Parse(feedID)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid feed_id")
+		return
+	}
+
+	queries := r.URL.Query()
+	offsetQ := queries.Get("offset")
+	limitQ := queries.Get("limit")
+
+	if offsetQ == "" {
+		offsetQ = "0" // default to 0
+	}
+	if limitQ == "" {
+		limitQ = "10" // default to 10
+	}
+	//convert to int
+	offset, err1 := strconv.Atoi(offsetQ)
+	limit, err2 := strconv.Atoi(limitQ)
+	if err1 != nil || err2 != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid offset or limit")
+		return
+	}
+
+	posts, err := cfg.DB.GetPostsByFeedID(r.Context(), database.GetPostsByFeedIDParams{
+		FeedID: fID,
+		Offset: int32(offset),
+		Limit:  int32(limit),
+	})
+	if err != nil {
+		cfg.Logger.Printf("Failed to get posts for feed id %v: %+v", fID, err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to get posts")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, posts)
+}
+
 func main() {
 
 	// Open the log file
@@ -487,6 +531,7 @@ func v1Router(apiConfig *apiConfig) http.Handler {
 	r.Delete("/feed_follows/{feed_follows_id}", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsDelete))
 
 	r.Get("/posts", apiConfig.middlewareAuth(apiConfig.handlerPostsGet))
+	r.Get("/posts/{feed_id}", apiConfig.handlerPostsFeedIdGet)
 
 	return r
 }

@@ -64,6 +64,12 @@ function APIList() {
       description: "Get all posts",
       isAuthenticated: true,
     },
+    {
+      path: "/v1/posts/{feed_id}",
+      method: "GET",
+      description: "Get all posts for a feed id",
+      isAuthenticated: false,
+    },
   ];
 
   return (
