@@ -3,8 +3,6 @@ import axios from "axios";
 
 const FeedForm: React.FC = () => {
   const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [apiKey, setApiKey] = useState("");
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -12,8 +10,6 @@ const FeedForm: React.FC = () => {
 
     const payload = {
       url,
-      title,
-      description,
     };
 
     try {
@@ -36,8 +32,6 @@ const FeedForm: React.FC = () => {
 
     // Reset form fields
     setUrl("");
-    setTitle("");
-    setDescription("");
     setApiKey("");
   };
 
@@ -49,25 +43,6 @@ const FeedForm: React.FC = () => {
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          required
-        />
-      </label>
-      <br />
-      <label>
-        Title:
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-      </label>
-      <br />
-      <label>
-        Description:
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
           required
         />
       </label>
