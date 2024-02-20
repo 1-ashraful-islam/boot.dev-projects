@@ -54,3 +54,14 @@
   font-weight: bold;
   max-width: max-content;
 }
+
+.horizontal-list {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  overflow-x: auto;
+  /* white-space: nowrap; */
+}

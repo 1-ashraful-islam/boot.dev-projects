@@ -1,6 +1,7 @@
 import React from "react";
 import { Tooltip } from "react-tooltip";
 import styles from "./APIList.module.css";
+import { FaLock } from "react-icons/fa";
 
 function APIList() {
   const apiEndpoints = [
@@ -74,7 +75,9 @@ function APIList() {
 
   return (
     <div className={styles.apiContainer}>
-      <p>(🔒 - Authentication Required)</p>
+      <p>
+        (<FaLock /> - Authentication Required)
+      </p>
       {apiEndpoints.map((api, index) => (
         <div key={index} className={styles.apiItem}>
           <div>
@@ -96,7 +99,7 @@ function APIList() {
                   data-tooltip-content={`Requires authentication`}
                   data-tooltip-place="top"
                 >
-                  🔒
+                  <FaLock />
                 </span>
                 <Tooltip id={`auth-tooltip-${index}`}></Tooltip>
               </>

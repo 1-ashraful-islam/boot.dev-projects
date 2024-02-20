@@ -1,40 +1,37 @@
 import React, { useState, useEffect } from "react";
-
-interface Post {
-  id: string;
-  title: string;
-  url: string;
-}
+import PostCard, { Post } from "./PostCard";
 
 const PostList: React.FC<{
   feed_id: string;
-  offset: string;
-  limit: string;
-}> = ({ feed_id, offset, limit }) => {
-  const [posts, setPosts] = useState<Post[]>([]);
+  initialOffset: string;
+  initialLimit: string;
+}> = ({ feed_id, initialOffset, initialLimit }) => {
   const [fetchError, setFetchError] = useState<string>("");
+  // State to manage offset and limit for pagination
+  const [offset, setOffset] = useState(initialOffset);
+  const limit = initialLimit;
+  const [posts, setPosts] = useState<Post[]>([]);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const url = new URL(`http://localhost:8080/v1/posts/${feed_id || ""}`);
-        const params = new URLSearchParams();
-
-        if (offset) {
-          params.append("offset", offset);
-        }
-
-        if (limit) {
-          params.append("limit", limit);
-        }
-
+        const params = new URLSearchParams({ offset, limit });
         url.search = params.toString();
 
         const response = await fetch(url.toString());
         if (response.ok) {
-          const data: Post[] = await response.json();
-          if (data) {
-            setPosts(data);
+          const newPosts: Post[] = await response.json();
+          if (newPosts) {
+            // Append new posts instead of replacing them
+            setPosts((prevPosts) => {
+              const uniquePosts = newPosts.filter((newPost) => {
+                return !prevPosts.some(
+                  (prevPost) => prevPost.id === newPost.id
+                );
+              });
+              return [...prevPosts, ...uniquePosts];
+            });
             setFetchError("");
           }
         }
@@ -47,18 +44,25 @@ const PostList: React.FC<{
     fetchPosts();
   }, [feed_id, limit, offset]);
 
+  // Load more posts by increasing the offset
+  const handleLoadMore = () => {
+    setOffset((prevOffset) =>
+      (parseInt(prevOffset) + parseInt(limit)).toString()
+    );
+  };
+
   return (
     <>
-      <div>
-        <h2>Posts</h2>
-      </div>
       {fetchError && <div className="network-error">{fetchError}</div>}
-      <ul>
+      <ul className="horizontal-list">
         {posts.map((post) => (
           <li key={post.id}>
-            {post.title} ({post.url})
+            <PostCard post={post} />
           </li>
         ))}
+        <li key="LoadMore">
+          <button onClick={handleLoadMore}>Load More</button>
+        </li>
       </ul>
     </>
   );

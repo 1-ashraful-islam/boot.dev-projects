@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "react-modal";
+import { FaLink } from "react-icons/fa";
 import NewFeedForm from "./NewFeedForm";
 import PostList from "./PostList";
 
@@ -93,8 +94,18 @@ const FeedList: React.FC = () => {
       <ul>
         {feeds.map((feed) => (
           <li key={feed.id}>
-            {feed.title} ({feed.url})
-            <PostList feed_id={feed.id} offset={"0"} limit={"5"} />
+            <h2>
+              {feed.title}{" "}
+              <a href={feed.url || "#"} target="_blank" rel="noreferrer">
+                <FaLink />
+              </a>
+            </h2>
+            ({feed.url})
+            <PostList
+              feed_id={feed.id}
+              initialOffset={`${0}`}
+              initialLimit={`${5}`}
+            />
           </li>
         ))}
       </ul>
