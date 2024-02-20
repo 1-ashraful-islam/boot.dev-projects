@@ -153,9 +153,7 @@ func (cfg *apiConfig) handlerUsersPost() http.HandlerFunc {
 
 func (cfg *apiConfig) handlerFeedsPost(w http.ResponseWriter, r *http.Request, u database.User) {
 	var f struct {
-		Title       string `json:"title"`
-		URL         string `json:"url"`
-		Description string `json:"description"`
+		URL string `json:"url"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&f); err != nil {
@@ -165,8 +163,8 @@ func (cfg *apiConfig) handlerFeedsPost(w http.ResponseWriter, r *http.Request, u
 	}
 	defer r.Body.Close()
 
-	if f.Title == "" || f.URL == "" || f.Description == "" {
-		respondWithError(w, http.StatusBadRequest, "title, url, and description fields are required")
+	if f.URL == "" {
+		respondWithError(w, http.StatusBadRequest, "url is required")
 		return
 	}
 
@@ -176,14 +174,22 @@ func (cfg *apiConfig) handlerFeedsPost(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 
+	// validate feed and also get the title and description
+	feedInfo, err := scrapper.FetchFeedInfo(r.Context(), f.URL)
+	if err != nil {
+		cfg.Logger.Printf("Failed to fetch feed data: %+v", err)
+		respondWithError(w, http.StatusBadRequest, "Failed to fetch feed data, check if the URL is valid and try again.")
+		return
+	}
+
 	feed, err := cfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
 		ID:          uuid.New(),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 		UserID:      u.ID,
 		Url:         f.URL,
-		Title:       f.Title,
-		Description: f.Description,
+		Title:       feedInfo.Title,
+		Description: feedInfo.Description,
 	})
 
 	if err != nil {
