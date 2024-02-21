@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { useAuth } from "./AuthContext";
 
 const FeedForm: React.FC = () => {
   const [url, setUrl] = useState("");
-  const [apiKey, setApiKey] = useState("");
+  const { apiKey } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent) => {
     if (!apiKey) {
@@ -45,7 +46,6 @@ const FeedForm: React.FC = () => {
 
     // Reset form fields
     setUrl("");
-    setApiKey("");
   };
 
   return (
@@ -56,16 +56,6 @@ const FeedForm: React.FC = () => {
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          required
-        />
-      </label>
-      <br />
-      <label>
-        API Key:
-        <input
-          type="text"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
           required
         />
       </label>

@@ -5,15 +5,39 @@ import IconButton from "@mui/material/IconButton";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { useAuth } from "./AuthContext";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [apikey, setApikey] = useState("");
+  const [apiKeyInput, setApiKeyInput] = useState("");
   const { setApiKey, LoginError, setLoginError } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleLoginSuccess = () => {
+    toast.success("Login was successful!", {
+      position: "top-center",
+      autoClose: 3000,
+    });
+    navigate("/");
+  };
+
+  const handleLoginError = () => {
+    toast.error(LoginError, {
+      position: "top-center",
+      autoClose: 3000,
+    });
+  };
+
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setApiKey(apikey); // Update the global API key
+    try {
+      await setApiKey(apiKeyInput); // Update the global API key
+      handleLoginSuccess();
+    } catch (error) {
+      console.error("Error logging in", error);
+      handleLoginError();
+    }
   };
 
   const handleClickShowPassword = () => {
@@ -26,7 +50,7 @@ export default function LoginForm() {
     event.preventDefault();
   };
   const handleApikeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setApikey(event.target.value);
+    setApiKeyInput(event.target.value);
     //clear the error message when the user starts typing
     if (LoginError) {
       setLoginError("");

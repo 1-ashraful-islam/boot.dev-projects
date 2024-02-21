@@ -2,10 +2,11 @@ import React, { createContext, ReactNode, useContext, useState } from "react";
 
 type AuthContextType = {
   apiKey: string;
-  setApiKey: (key: string) => void;
+  setApiKey: (key: string) => Promise<void>;
   isLoggedIn: boolean;
   LoginError: string;
   setLoginError: (error: string) => void;
+  handleLogout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,7 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       const data = await response.json();
 
-      console.log(data);
+      console.log(`Login is successful for user: ${data.name}`);
       setApiKey(key);
       setIsLoggedIn(true);
       setLoginError("");
@@ -58,9 +59,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // localStorage.setItem("apiKey", key); // Persist the API key in local storage
     } catch (error) {
       console.error(error);
-      setIsLoggedIn(false);
       setLoginError("Invalid API key");
+      throw error;
     }
+  };
+
+  const handleLogout = () => {
+    setApiKey("");
+    setIsLoggedIn(false);
+    setLoginError("");
+    sessionStorage.removeItem("apiKey");
+    // TODO: If implementing remember me feature
+    // localStorage.removeItem("apiKey");
   };
 
   return (
@@ -68,6 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       value={{
         apiKey,
         setApiKey: handleSetApiKey,
+        handleLogout,
         isLoggedIn,
         LoginError,
         setLoginError,

@@ -8,7 +8,7 @@ import LoginPage from "./pages/LoginPage";
 import { useAuth } from "./components/AuthContext";
 
 function Navigation() {
-  const { isLoggedIn, setApiKey } = useAuth();
+  const { isLoggedIn, handleLogout } = useAuth();
   return (
     <nav>
       <ul className="App-nav">
@@ -31,11 +31,7 @@ function Navigation() {
               <Link to="/login">Login / Sign Up</Link>
             </li>
           ) : (
-            <li
-              onClick={() => {
-                setApiKey("");
-              }}
-            >
+            <li onClick={handleLogout}>
               <Link to="#">Logout</Link>
             </li>
           )}
