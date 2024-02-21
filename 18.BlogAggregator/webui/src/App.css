@@ -22,14 +22,20 @@
   padding: 10px;
   display: flex;
   flex-direction: column;
+  /* max-width: 950px; */
 }
 
 .App-nav {
   margin: 0;
   padding: 0;
   list-style: none;
-  display: flex;
   gap: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.App-nav li {
+  padding: 5px; 
 }
 
 .App-nav li a {
@@ -43,6 +49,9 @@
 .App-nav li a:hover {
   background-color: #61dafb;
   color: #282c34;
+}
+.nav-links, .auth-links {
+  display: flex;
 }
 
 .network-error {
@@ -63,5 +72,4 @@
   flex-direction: row;
   gap: 20px;
   overflow-x: auto;
-  /* white-space: nowrap; */
 }

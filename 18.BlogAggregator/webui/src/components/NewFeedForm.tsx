@@ -1,11 +1,19 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const FeedForm: React.FC = () => {
   const [url, setUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
 
   const handleSubmit = async (event: React.FormEvent) => {
+    if (!apiKey) {
+      toast.error("Please login with an API key to follow a feed", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      return;
+    }
     event.preventDefault();
 
     const payload = {
@@ -22,6 +30,11 @@ const FeedForm: React.FC = () => {
           },
         }
       );
+
+      toast.success("Feed added successfully", {
+        position: "top-center",
+        autoClose: 3000,
+      });
 
       // Handle response here
       console.log(response.data);

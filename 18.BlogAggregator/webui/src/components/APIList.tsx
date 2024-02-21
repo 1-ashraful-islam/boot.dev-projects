@@ -26,7 +26,7 @@ function APIList() {
     {
       path: "/v1/users",
       method: "GET",
-      description: "Get all users",
+      description: "Get user details",
       isAuthenticated: true,
     },
     {

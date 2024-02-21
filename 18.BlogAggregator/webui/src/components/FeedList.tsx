@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import Modal from "react-modal";
-import { FaLink } from "react-icons/fa";
+import { FaLink, FaPlus } from "react-icons/fa";
 import NewFeedForm from "./NewFeedForm";
 import PostList from "./PostList";
+import styles from "./FeedList.module.css";
+import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Set app element for accessibility; typically set to your root app element
 Modal.setAppElement("#root");
@@ -13,26 +17,11 @@ interface Feed {
   url: string;
 }
 
-const modalStyles = {
-  content: {
-    top: "50%",
-    left: "50%",
-    right: "auto",
-    bottom: "auto",
-    marginRight: "-50%",
-    transform: "translate(-50%, -50%)",
-  },
-  overlay: {
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
-  },
-};
-
 const FeedList: React.FC = () => {
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [fetchError, setFetchError] = useState<string>("");
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const api_key = "";
 
   useEffect(() => {
     const fetchFeeds = async () => {
@@ -54,53 +43,70 @@ const FeedList: React.FC = () => {
     fetchFeeds();
   }, []);
 
-  const handleOpenModal = () => {
-    setModalIsOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalIsOpen(false);
-  };
-
   const toggleFormVisibility = () => {
     setIsFormVisible(!isFormVisible);
   };
 
+  const handleFeedFollow = async (feed_id: string, api_key: string) => {
+    if (!api_key) {
+      toast.error("Please login with an API key to follow a feed", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      return;
+    }
+    try {
+      const response = await axios.post(
+        `http://localhost:8080/v1/feed_follows`,
+        { feed_id },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${api_key}`,
+          },
+        }
+      );
+      if (response.status === 200) {
+        // Handle response here
+        console.log("Feed followed successfully");
+        toast.success("Feed followed successfully", {
+          position: "top-center",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      // Handle error here
+      console.error("Error following feed", error);
+    }
+  };
+
   return (
     <>
-      <Modal
-        isOpen={modalIsOpen}
-        onRequestClose={handleCloseModal}
-        contentLabel="Add New Feed"
-        style={modalStyles}
-      >
-        <NewFeedForm />
-        <button onClick={handleCloseModal}>Close</button>
-      </Modal>
-      <div>
-        <h2>
-          Feeds{" "}
-          <button onClick={toggleFormVisibility}>
-            <strong>+</strong>{" "}
-            {isFormVisible ? "Cancel new feed" : "Add a new Feed"}
-          </button>
-          <button onClick={handleOpenModal}>
-            <strong>+</strong>Add a new Feed with Modal
-          </button>
-        </h2>
-        {isFormVisible && <NewFeedForm />}
-      </div>
       {fetchError && <div className="network-error">{fetchError}</div>}
-      <ul>
+      <ul className={styles.feedList}>
+        <li>
+          <div>
+            <h2>
+              <button onClick={toggleFormVisibility}>
+                <strong>+</strong>{" "}
+                {isFormVisible ? "Cancel new feed" : "Add a new Feed"}
+              </button>
+            </h2>
+            {isFormVisible && <NewFeedForm />}
+          </div>
+        </li>
         {feeds.map((feed) => (
           <li key={feed.id}>
-            <h2>
+            <h3>
               {feed.title}{" "}
               <a href={feed.url || "#"} target="_blank" rel="noreferrer">
                 <FaLink />
-              </a>
-            </h2>
-            ({feed.url})
+              </a>{" "}
+              <button onClick={() => handleFeedFollow(feed.id, api_key)}>
+                <FaPlus /> Follow the feed
+              </button>
+            </h3>
+
             <PostList
               feed_id={feed.id}
               initialOffset={`${0}`}
