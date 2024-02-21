@@ -26,12 +26,13 @@
 }
 
 .App-nav {
-  margin: 0;
+  margin: 0 auto;
   padding: 0;
   list-style: none;
   gap: 20px;
   display: flex;
   justify-content: space-between;
+  max-width: 1000px;
 }
 
 .App-nav li {
