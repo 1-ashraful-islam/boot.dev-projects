@@ -4,8 +4,11 @@ import LandingPage from "./pages/LandingPage";
 import APIListPage from "./pages/APIListPage";
 import { ToastContainer } from "react-toastify";
 import ExplorePage from "./pages/ExplorePage";
+import LoginPage from "./pages/LoginPage";
+import { useAuth } from "./components/AuthContext";
 
 function Navigation() {
+  const { isLoggedIn, setApiKey } = useAuth();
   return (
     <nav>
       <ul className="App-nav">
@@ -13,20 +16,29 @@ function Navigation() {
           <li>
             <Link to="/">Home</Link>
           </li>
-          <li>
-            <Link to="/discover">Discover</Link>
-          </li>
+          {isLoggedIn ? (
+            <li>
+              <Link to="/discover">Discover</Link>
+            </li>
+          ) : null}
           <li>
             <Link to="/api">API Reference</Link>
           </li>
         </div>
         <div className="auth-links">
-          <li>
-            <Link to="/login">Login</Link>
-          </li>
-          <li>
-            <Link to="/signup">Sign Up</Link>
-          </li>
+          {!isLoggedIn ? (
+            <li>
+              <Link to="/login">Login / Sign Up</Link>
+            </li>
+          ) : (
+            <li
+              onClick={() => {
+                setApiKey("");
+              }}
+            >
+              <Link to="#">Logout</Link>
+            </li>
+          )}
         </div>
       </ul>
     </nav>
@@ -39,13 +51,14 @@ function App() {
       <div className="App">
         <header className="App-header">
           <Navigation />
+          <ToastContainer />
         </header>
-        <ToastContainer />
         <main className="App-main">
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/discover" element={<ExplorePage />} />
             <Route path="/api" element={<APIListPage />} />
+            <Route path="/login" element={<LoginPage />} />
           </Routes>
         </main>
       </div>

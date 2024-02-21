@@ -74,3 +74,25 @@
   gap: 20px;
   overflow-x: auto;
 }
+
+.login-button {
+  width: 100%;
+  padding: 15px;
+  background-color: #0296c0;
+  font-weight: bold;
+  font-size: 1.5rem;
+  border-radius: 5px;
+  border-width: 0;
+  color: #fff;
+}
+
+.signup-button {
+  width: fit-content;
+  padding: 15px;
+  background-color: #0aad07;
+  font-weight: bold;
+  font-size: 1rem;
+  border-radius: 5px;
+  border-width: 0;
+  color: #fff;
+}
