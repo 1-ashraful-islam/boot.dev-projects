@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import PostCard, { Post } from "./PostCard";
+import { useAuth } from "./AuthContext";
 
 const PostList: React.FC<{
   feed_id: string;
@@ -12,6 +13,7 @@ const PostList: React.FC<{
   const [isFetching, setIsFetching] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef<HTMLLIElement | null>(null);
+  const { apiKey, isLoggedIn } = useAuth();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -39,7 +41,9 @@ const PostList: React.FC<{
         const url = new URL(`http://localhost:8080/v1/posts/${feed_id}`);
         const params = new URLSearchParams({ offset, limit: initialLimit });
         url.search = params.toString();
-        const response = await fetch(url.toString());
+        const response = await fetch(url.toString(), {
+          headers: isLoggedIn ? { Authorization: `Bearer ${apiKey}` } : {},
+        });
         if (response.ok) {
           const newPosts: Post[] = await response.json();
           if (newPosts) {
@@ -75,15 +79,24 @@ const PostList: React.FC<{
     };
 
     fetchPosts();
-  }, [feed_id, initialLimit, offset]);
+  }, [apiKey, feed_id, initialLimit, isLoggedIn, offset]);
+
+  const getBaseUrl = (url: string) => {
+    const urlObject = new URL(url);
+    return urlObject.host.toString();
+  };
 
   return (
     <>
       {fetchError && <div className="network-error">{fetchError}</div>}
-      <ul className="horizontal-list">
+      <ul className={feed_id !== "" ? "horizontal-list" : "gallery-list"}>
         {posts.map((post, index) => (
           <li key={post.id}>
-            <PostCard post={post} index={index} />
+            <PostCard
+              post={post}
+              index={index}
+              url={feed_id === "" ? getBaseUrl(post.url) : ""}
+            />
           </li>
         ))}
         {hasMore && !isFetching && (

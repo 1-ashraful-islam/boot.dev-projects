@@ -1,12 +1,10 @@
 import { useAuth } from "../components/AuthContext";
-import FeedList from "../components/FeedList";
+import LoggedInLanding from "../components/LoggedInLanding";
 import NotLoggedInLanding from "../components/NotLoggedInLanding";
 
 const LandingPage: React.FC = () => {
   const { isLoggedIn } = useAuth();
-  return (
-    <>{isLoggedIn ? <FeedList showAll={false} /> : <NotLoggedInLanding />}</>
-  );
+  return <>{isLoggedIn ? <LoggedInLanding /> : <NotLoggedInLanding />}</>;
 };
 
 export default LandingPage;
