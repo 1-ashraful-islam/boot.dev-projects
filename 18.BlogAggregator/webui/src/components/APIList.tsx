@@ -54,7 +54,7 @@ function APIList() {
       isAuthenticated: true,
     },
     {
-      path: "/v1/feed_follows/{feed_follows_id}",
+      path: "/v1/feed_follows/{feed_id}",
       method: "DELETE",
       description: "Delete a feed follow",
       isAuthenticated: true,

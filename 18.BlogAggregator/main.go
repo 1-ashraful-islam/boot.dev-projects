@@ -295,15 +295,15 @@ func (cfg *apiConfig) handlerFeedFollowsPost(w http.ResponseWriter, r *http.Requ
 }
 
 func (cfg *apiConfig) handlerFeedFollowsDelete(w http.ResponseWriter, r *http.Request, u database.User) {
-	feedFollowID := chi.URLParam(r, "feed_follows_id")
-	if feedFollowID == "" {
-		respondWithError(w, http.StatusBadRequest, "feed_follows_id is required")
+	feedID := chi.URLParam(r, "feed_id")
+	if feedID == "" {
+		respondWithError(w, http.StatusBadRequest, "feed_id is required")
 		return
 	}
 
-	ffID, err := uuid.Parse(feedFollowID)
+	ffID, err := uuid.Parse(feedID)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid feed_follows_id")
+		respondWithError(w, http.StatusBadRequest, "Invalid feed_id")
 		return
 	}
 
@@ -534,7 +534,7 @@ func v1Router(apiConfig *apiConfig) http.Handler {
 
 	r.Post("/feed_follows", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsPost))
 	r.Get("/feed_follows", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsGet))
-	r.Delete("/feed_follows/{feed_follows_id}", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsDelete))
+	r.Delete("/feed_follows/{feed_id}", apiConfig.middlewareAuth(apiConfig.handlerFeedFollowsDelete))
 
 	r.Get("/posts", apiConfig.middlewareAuth(apiConfig.handlerPostsGet))
 	r.Get("/posts/{feed_id}", apiConfig.handlerPostsFeedIdGet)
