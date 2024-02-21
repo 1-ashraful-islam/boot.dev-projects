@@ -9,7 +9,7 @@ INSERT INTO feed_follows (
 SELECT * FROM feed_follows WHERE feed_id = $1 AND user_id = $2;
 
 -- name: GetFeedFollowsByUser :many
-SELECT * FROM feed_follows WHERE user_id = $1;
+SELECT * FROM feeds WHERE id IN (SELECT feed_id FROM feed_follows WHERE feed_follows.user_id = $1);
 
 -- name: DeleteFeedFollow :exec
 DELETE FROM feed_follows WHERE feed_id = $1 AND user_id = $2;
