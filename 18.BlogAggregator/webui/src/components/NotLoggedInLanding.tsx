@@ -28,7 +28,7 @@ export default function NotLoggedInLanding() {
         <br />
         <h2 style={{ fontSize: "2.5em" }}> Discover New RSS feeds</h2>
       </div>
-      <FeedList />
+      <FeedList showAll={true} />
     </>
   );
 }

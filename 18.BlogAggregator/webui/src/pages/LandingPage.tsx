@@ -4,7 +4,9 @@ import NotLoggedInLanding from "../components/NotLoggedInLanding";
 
 const LandingPage: React.FC = () => {
   const { isLoggedIn } = useAuth();
-  return <>{isLoggedIn ? <FeedList /> : <NotLoggedInLanding />}</>;
+  return (
+    <>{isLoggedIn ? <FeedList showAll={false} /> : <NotLoggedInLanding />}</>
+  );
 };
 
 export default LandingPage;

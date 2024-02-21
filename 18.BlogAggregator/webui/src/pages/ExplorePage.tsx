@@ -9,7 +9,7 @@ export default function ExplorePage() {
         <h1>Explore All Feeds</h1>
         <p> Discover new blogs!</p>
       </div>
-      <FeedList />
+      <FeedList showAll={true} />
     </>
   );
 }
