@@ -1,5 +1,7 @@
 # Blog Aggregator in Go
 
+> :warning: **Announcement**:This project got too big and more complex than I anticipated. I am moving this project to a new repository. You can find the new repository [here](https://github.com/1-ashraful-islam/blog-aggregator.git).
+
 This project is a blog aggregator service in Go. It utilizes RESTful API that fetches data from remote locations and stores them in a production-ready database tools like PostgreSQL, SQLc, Goose, and pgAdmin.
 
 It also utilizes a long-running service worker that reaches out over the internet to fetch data from remote locations.

@@ -1,5 +1,5 @@
 import { FaLink } from "react-icons/fa";
-import styles from "./PostCard.module.css";
+import styles from "../styles/PostCard.module.css";
 import { format } from "date-fns";
 
 export interface Post {

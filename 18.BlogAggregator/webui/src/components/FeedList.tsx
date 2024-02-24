@@ -3,7 +3,7 @@ import Modal from "react-modal";
 import { FaLink, FaPlus, FaTrash } from "react-icons/fa";
 import NewFeedForm from "./NewFeedForm";
 import PostList from "./PostList";
-import styles from "./FeedList.module.css";
+import styles from "../styles/FeedList.module.css";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

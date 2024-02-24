@@ -3,7 +3,7 @@ import FeedList from "./FeedList";
 import PostList from "./PostList";
 
 export default function LoggedInLanding() {
-  const [viewMode, setViewMode] = useState("aggregated");
+  const [viewMode, setViewMode] = useState("byFeed");
 
   const handleViewModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setViewMode(e.target.value);
@@ -26,8 +26,8 @@ export default function LoggedInLanding() {
             onChange={handleViewModeChange}
             style={{ fontSize: "1.2em" }}
           >
-            <option value="aggregated">Aggregated</option>
             <option value="byFeed">By Feed</option>
+            <option value="aggregated">Aggregated</option>
           </select>
         </div>
       </div>
